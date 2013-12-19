@@ -1,0 +1,12 @@
+Directory contents:
+
+ifalt_xml_parser.php	An attempt to write a stream-based xml parser to read the IFALT-XML file.
+
+ifalt2xml.php			A script to convert IFALT into IFALT-XML. Probably outdated.
+
+ifaltXML_converter.php	A script to read in *.table files and produce IFALT-XML ready for 
+						loading using the (not-yet written) xml parser.
+
+loader.xsd				An attempt at defining the IFALT-XML spec.
+
+sample.xml				A (probably outdated) sample IFALT-XML file.

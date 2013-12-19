@@ -1,0 +1,140 @@
+/**
+ * @package TableEdit
+ * @author Daniel Renfro < bluecurio@gmail.com >
+ *
+ * TableEdit CSS file. 
+ */
+
+
+/* --- stylize the links in tables ----------------------------------*/
+
+a.tableEdit ,
+a:link.tableEdit ,
+a:visited.tableEdit  {
+	border:none;
+}
+
+a:link.tableEdit {
+	color:#d42945;
+	text-decoration:none;
+	border-bottom:1px dotted #ffbac8;
+}	
+a:visited.tableEdit {
+	color:#d42945;
+	border-bottom:none;
+	text-decoration:none;
+}		
+a:hover.tableEdit,
+a:focus.tableEdit {
+	color:#f03b58;
+	border-bottom:1px solid #f03b58;
+	text-decoration:none;
+}
+
+
+/* --- main style for the tables ----------------------------------*/
+
+.tableEdit {	
+	/*font: 90% "Trebuchet MS",Verdana,Arial,Helvetica,sans-serif;*/
+	text-align: left;
+		
+	background-attachment: scroll;
+	background-color: #f9f9f9;
+	background-image: none;
+	/*
+	border-color: #CCCCCC;
+	border-style: solid;
+	border-width: 1px;
+	*/
+	border-collapse:collapse;
+	
+	margin-bottom: 0em;
+	margin-top: 0em;
+	margin-left: 0em;
+	margin-right: 1em;
+}
+
+.tableEdit caption {
+	color: black;
+	font-size:.94em;
+	letter-spacing:.1em;
+	margin:1em 0 0 0;
+	padding:0;
+	caption-side:top;
+	text-align:center;
+}
+
+.tableEdit td {
+	color:black;
+	border: 1px solid #CCCCCC;
+	padding:.3em 1em;
+	text-align:left;
+}
+
+.tableEdit th {
+	border: 1px solid #CCCCCC;
+	font-weight: bolder;
+	padding: 5px 20px 5px 5px;
+	vertical-align: center;
+	white-space: normal;
+	background-color: #ccccff;
+}	
+
+.tableEdit tfoot th {
+	text-align:center;
+	background:#f4f9fe;
+	/*font:bold 1.2em "Century Gothic","Trebuchet MS",Arial,Helvetica,sans-serif;*/
+	margin:.5em .5em .5em 0;
+	color:#033E6B;
+	font-weight: bold;
+	font-size: 1.1em;
+	font-style: normal;
+}
+
+.tableEdit tfoot td {
+	color:black;
+	padding:.3em 1em;
+	white-space: nowrap;
+}
+
+/* Used on the foreign tables to show where the data came from. */
+.tableEdit_note {
+	font-size: smaller;
+	text-align: center;
+}
+
+.tableEdit_error {
+	color: red;
+	font-size:.94em;
+	margin:1em 0 0 0;
+	padding:0;
+	text-align:center;
+}
+
+/* --- edit-view stuff ----------------------------------*/
+
+.tableEdit_colButton td {
+	border-width: 0px;
+	text-align: center;
+}
+
+.tableEdit_extras h3 {
+	color: black;
+	border-bottom: 1px solid #AAAAAA;
+}
+
+
+.tableEdit_metadata2 table {		/* metadata view */
+	border: 1px solid #222222;
+	border-collapse: collapse;
+
+}
+
+.tableEdit_metadata2 td {
+	border: 1px solid #555555;
+	padding: 10px; 
+	margin: 5px;
+}
+
+
+

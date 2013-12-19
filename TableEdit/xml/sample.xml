@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<loader>
+  <page>
+    <name>lacZ:Gene</name>
+    <template>Gene</template>
+    <table>
+      <template>Gene_sequence_features_table</template>
+      <row_data>
+        <row>
+          <field>a</field>
+          <field>b</field>
+          <field>c</field>
+          <metadata>metadata for the row</metadata>
+          <update_type>append</update_type>
+        </row>
+        <row>
+          <field>1</field>
+          <field>2</field>
+          <field>3</field>
+          <update_type>append</update_type>
+          <metadata>more metadata</metadata>
+        </row>
+      </row_data>
+      <metadata/>
+      <misc></misc>
+    </table>
+    <table>
+      <template>Gene_accessions_table</template>
+      <row_data>
+        <row>
+          <metadata></metadata>
+          <field>EcoCyc (EcoliWiki Page)</field>
+          <update_type></update_type>
+        </row>
+        <row>
+          <field>EcoCyc:EG10527</field>
+          <update_type></update_type>
+          <metadata></metadata>
+        </row>
+        <row>
+          <field>EchoBASE (EcoliWiki Page)</field>
+          <update_type></update_type>
+          <metadata></metadata>
+        </row>
+        <row>
+          <field>EchoBASE:EB0522</field>
+          <update_type></update_type>
+          <metadata></metadata>
+        </row>
+      </row_data>
+      <metadata/>
+      <misc/>
+    </table>
+  </page>
+  <page>
+    <name>lacZ:Gene_Product(s)</name>
+    <template>Product</template>
+    <table>
+      <template>GO_table_product</template>
+      <row_data>
+        <row>
+          <field></field>
+          <field>GO:0009088</field>
+          <field></field>
+          <field></field>
+          <field></field>
+          <field>Seeded from EcoCyc 11.6 &lt;ref name = 'LIB:EcoCyc11.6'/&gt;</field>
+          <metadata></metadata>
+          <update_type></update_type>
+        </row>
+        <row>
+          <field></field>
+          <field>GO:0005575</field>
+          <field></field>
+          <field></field>
+          <field></field>
+          <field>Seeded from EcoCyc 11.6 &lt;ref name = 'LIB:EcoCyc11.6'/&gt;</field>
+          <update_type></update_type>
+          <metadata></metadata>
+        </row>
+        <row>
+          <field></field>
+          <field>GO:0003617</field>
+          <field></field>
+          <field></field>
+          <field></field>
+          <field>Seeded from EcoCyc 11.6 &lt;ref name = 'LIB:EcoCyc11.6'/&gt;</field>
+          <update_type></update_type>
+          <metadata></metadata>
+        </row>
+      </row_data>
+      <metadata/>
+      <misc></misc>
+    </table>
+  </page>
+</loader>

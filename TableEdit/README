@@ -1,0 +1,215 @@
+TableEdit - a set of extensions to create and edit mediawiki tables.
+
+TableEdit officially lives on MediaWiki at 
+    [ http://www.mediawiki.org/wiki/Extension:TableEdit ]
+I suggest reading the documentation there first, as these files tend
+to not get updated regularly. The wiki pages also possibly have notes
+and updates from other users that you might find helpful. Please leave
+comments on the talk page and one of the developers will try and get 
+back to you. 
+
+TODO:
+installer needs rewriting.
+
+Changelog
+----------------
+version 1.0.12
+- add preprocessing for column rules
+- add CACAO filter on evidence codes
+- modify select column rule for situation where value is not in the menu
+----------------
+version 1.0.11
+- debugging resourceloader
+- changes to TableMarkerUpper to prevent seg fault on large pages
+- changes to TableEditLinks
+----------------
+version 1.0.10
+- Refactor to change TableEditView via static functions vs. object.
+- add TableEditCategorySummary tag extension to mine data from tables on other pages
+- add TableEditCategoryTags to update categories
+- move css and js to Resourceloader
+----------------
+version 1.0.9
+2013-05-01
+- improved dbxref column rule
+- rewrote modules/TableEditLinks to OO
+----------------
+version 1.0.8
+2013-04-30 (should have been putting dates on!)
+- Fixed checkbox column rule
+----------------
+version 1.0.7
+- Changed deletion hook from ArticleDelete to ArticleDeleteComplete
+- Changed modules TableMarkerUpper to fix regex failures when meta characters are in the content used
+----------------
+version 1.0.6 May 2012
+- Changes to support MW 1.18+
+	- ArticleDelete bug 198 in TableEdit.php fixed
+	- Change Xml::hidden to Html::hidden throughout
+	- Change to column rule customization support. See column/rules/README
+----------------
+version 1.0
+
+- Support for DataTables (http://datatables.net) was added in version 1.0.
+- modules/TableMarkerUpper.php
+    - This script adds a necessary <thead> tag to any tables in $wgOut.
+- addition of the (optional) <datatable> parameter in templated tables
+- addition of class="" and id="" attributes on wiki tables
+- CSS and JS specific to tableEdit
+- TableEdit::reorder_columns
+- TableEdit::reorder_template
+- see the README.dataTables for more details
+
+----------------
+version 0.99
+
+- Updated the SQL files to include the indexed fields.
+- Added support for relational tables ("foreign tables.")
+- Added limited support for creating a table from an Excel file (*.xls).
+- Added the option to download a table as a .csv file. (untested)
+- update_schema.php was changed to include relations table.
+- Many minor bug fixes.
+- lots of other things I can't remember/weren't documented.
+
+----------------
+version 0.83
+
+Added template specification of extra text above and below Table in wiki 
+view
+fixed delete row bug for nonsysops
+----------------
+version 0.82
+
+Added features:
+	Add multiple rows from the web interface
+	Templated tables can now have custom help text in 4 places:
+		help1 - below the source page name on all views
+		help2 - below the source page name on the navigation view
+		help3 - at the bottom of the navigation view
+		help4 - at the end of the row editing view
+Bug fixes:
+	Imported wikitext for help is now parsed into HTML
+	
+----------------
+version 0.8
+
+TableEdit now comes with a few new features:
+
+[1]	You will find a new class for loading data directly into the tables. This class is defined in
+	class.loader.php. It comes with an example usage script named loader.sample.php. A cursory definition 
+	of the input is defined at < http://blog.gmod.org/tableedit_round_trip_thoughts >, although this 
+	may change.
+	
+	The loader class *should* run smoothly with instances of TableEdit that still use an external 
+	database. However, it is strongly recomended that you update the schema into the MediaWiki database.
+	
+[2] 	The Updater. This script will take an external database and move it into the MW schema. It assumes that 
+	you do not have TableEdit tables in the MW schema already. Call this script by:
+	
+		php5 update_schema.php -w /path/to/your/wiki [ -u [ -p ] ]
+		
+	It is important to note that AdminSettings.php must exist and that the admin-user must have at least 
+	basic privileges along with CREATE and FILE privileges on both databases. Alternately, you can use the -u and -p
+	flags to specify a mysql user to use (typically one with root privileges.) 
+
+[3] 	Other improvements such as the ability to move columns, to add and delete metadata for a row or box,
+	better integration with the Mediawiki functions, and better code structure. TableEdit has been heavily 
+	modified, and backwards compatibility isn't guaranteed. 
+
+[4]	TableEdit now has a system to find its tables from the wikitext and compare that to what's in the database.
+	
+----------------
+version 0.75
+
+IMPORTANT - this version removes hardcoding of wikibox_db. The db name should be set using the global variable $wgTableEditDatabase, which can be set to different databases for different wikis.
+Changed to remove the intermediate step of having to click on Create Table Here.  Just inserts the Table.
+Changed bottom row with edit link to allow sortable.js in MW to work.
+row object updates its row_id on db_save_row()
+more parsing of the wiki markup in the TableEdit special page.
+escaped slashes and \n are converted.
+Changed user rights test so that unauth users can play with the interface, but can't save back to the wiki.  
+This allows people to at least try the interface.
+
+----------------
+version 0.6
+
+Special page now displays template expansions, e.g if the heading style is determined by a wiki template, then it gets used 
+Added hook and extension, TableEditCreationLinks.php to alter the "Create Table Here" text, depending on the template used
+changed how box_uid is done. Wasn't unique enough before
+changed SpecialTableEdit.body.php organization to be more useful for maintenance scripts
+more misc bug fixes.
+Inactivate headings edit link when templates are in use.
+
+----------------
+version 0.5
+
+bug fixes for mediawiki 1.10.0
+
+----------------
+version 0.4
+
+bug fixes
+
+----------------
+version 0.3
+
+Schema changes.  You need to reinstall the schema to use TableEdit.  You may lose some existing tables (remember that this extension is still experimental).
+
+Changed how boxes are identified to handle imports and page moves better
+
+misc. bug fixes
+
+Tables are now saved into the wiki in a less compressed form. This was necessary to allow content that breaks over more than one line, and to support bulleted lists as data.
+
+Template handling changed
+	There are now two ways to represent a table template
+	1. The old way, a return-delimited list is assumed to be a list of headings.
+	2. XML style.  Attributes for the table are wrapped in XML-like tags.
+		<headings></headings> for headings
+		<style></style> for heading style
+		<type></type> for horizontal (default) or vertical (1) orientation
+	
+	
+	3. Added support for special kinds of editable cells in the Template-defined headings. This should work with either the old or XML-style templates
+	Syntax:
+		Heading||column_name|rule
+		
+		rule syntax
+			text					to use input type=text instead of textarea
+			select|1|2|etc 			make a pulldown menu with choices 1, 2, etc
+			lookup|sql|field		sql statement|name of field to return
+									sql statements use {{{column_name}}} in place of specific fields
+			
+			example: Aspect||aspect|lookup|SELECT namespace from go_archive.term WHERE go_id = '{{{1}}}' ORDER BY term_update DESC LIMIT 1|namespace
+		
+		currently available calcs
+			split        			split|delimiter|x|y|z 
+									where x,y, and z are integers indicating which parts of the split to join into the result
+			reqcomplete				reqcomplete|column_name|column_name|column_name...  
+									where column names are required fields.
+									returns "complete" or "required field needed"
+
+Started moving message text to the i18n file.  Needs more work!
+
+Added a hook to allow other extensions to do things to the table before it is saved back to the wiki page.  Example included in the distribution.
+
+----------------
+version 0.2
+
+Changed persistence to use $_SESSION instead of putting serialized data all over the page.
+Edit conflict detection based on modification timestamp
+----------------
+version 0.1
+
+Basic experimental demo.
+----------------
+
+Manifest:
+TableEdit.php extension to replace <newEditTable/> with a table that uses the editor
+SpecialTableEdit.php - setup for the special page
+SpecialTableEdit.body.php - special page to provide a table editing interface
+SpecialTableEdit.i18n.php - internationalization (needs lots of work!)
+README - this file
+docfigs - directory of screencaps for documentation page
+TableEditLinks.php - example of extension of extension that hooks into SpecialTableEdit.body.php to add links to tables on save
+column_rules

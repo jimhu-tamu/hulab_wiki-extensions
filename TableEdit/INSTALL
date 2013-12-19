@@ -1,0 +1,62 @@
+INSTALL INSTRUCTIONS
+--------------------------------------------------------------------------------
+1. Download the TableEdit extension.  A link to the download is at
+   http://www.mediawiki.org/wiki/Extension:TableEdit
+
+2. Unpack the downloaded file using gunzip or another unpacking program.
+   ( You've probably already gotten this far. Good job.)
+
+3. Move the unpacked TableEdit directory to your MediaWiki extensions
+   directory. 
+
+4. If you don't already have an AdminSettings.php file in your MediaWiki
+   installation directory, create one. This contains the database admin 
+   username and password for your MediaWiki database. TableEdit needs this
+   information to create some tables in the database. 
+   [[ see http://www.mediawiki.org/wiki/AdminSettings.php ]] 
+   
+5. Backup your MediaWiki database. This is an important step in case anything
+   goes wrong. 
+   [[ see http://www.mediawiki.org/wiki/Backup ]]
+
+6. Get to your extensions/TableEdit directory and run the install.php
+   script:
+
+     php install.php -w /path/to/your/wiki
+
+   The -w parameter is the path to your MediaWiki installation.  This is
+   usually "../.." from the extensions/TableEdit directory.
+   
+   Right now TableEdit has only been tested using MySQL. If you are using 
+   a different database server, you may want to have a look in the sql/ 
+   directory for the sql files and create these tables by hand.
+
+7. Add the following lines to your LocalSettings.php file:
+
+   # TableEdit extension
+       require_once( $path_to_extensions . "TableEdit/TableEdit.php" );
+   # Make Mediawiki create valid tables
+       require_once( $path_to_extensions . "TableEdit/modules/TableMarkerUpper.php");	
+
+     
+   The $path_to_extensions variable is not needed unless you put your 
+   extensions somewhere besides the extensions/ directory.
+			
+8. Test it.  Try it out by making a new table with the wiki-markup:	
+	
+     <newTableEdit>
+     Heading1
+     Heading2
+     Heading3
+     </newTableEdit>
+
+9. Have a look at the documentation at [[ http://gmod.org/TableEdit ]]
+
+
+
+
+Known Issues:
+
+1. Images not showing correctly
+   Sometimes the images in the TableEdit directory need to be moved to a place inside your webroot (if the extension lives in a non-standard place.) You can copy the images to an accessible place, but remember to change the paths in the main.css file. 
+ 

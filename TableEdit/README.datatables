@@ -1,0 +1,35 @@
+With the release of TableEdit v1.0 came some changes to the way tables get made.
+This document explains the changes and is probably a good read for new installations
+as well as upgrades.
+
+TableEdit now creates tables with the attributes:
+
+	id 		a unique identifier for the table
+	class	organize tables into groups for styling (CSS) and behavior (JS)
+	
+Javascript and CSS files get included in the wikipage by the method
+TableEdit::wfTableEdit_AddHeadThings in SpecialTableEdit.body.php. This method
+looks for files in the js/ and css/ directories and inserts them in the <HEAD> 
+section of the wikipage. This method is used to insert the Javascript framework
+jQuery (http://jquery.com/) and an extension to jQuery named DataTables 
+(http://datatables.net). 
+
+DataTables adds much needed behavior to TableEdit tables via Javascript.
+Mediawiki tables do not have the required <thead></thead> and <tbody></tbody>
+sections neede by dataTables, so included in TableEdit v1.0 is a Mediawiki
+extension aptly named TableMarkerUpper.php. This script is in the modules/ 
+directory. Add these lines to your LocalSettings.php if you haven't already:
+
+   # Make Mediawiki create valid tables
+     require_once( $path_to_extensions . "TableEdit/modules/TableMarkerUpper.php");
+       
+DataTables allows you to do complex things with the tables on the client-side such
+as filtering, row-coloring, show/hide columns, saving state, etc. To turn this on 
+for a table, add the text ' class="dataTable" ' to the table opening tag, such as:
+
+{| class="dataTable"
+|-
+|a|b
+|-
+|c|d
+|}

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="loader">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="page"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="page">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="name"/>
+        <xs:element ref="template"/>
+        <xs:element ref="table"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="name" type="xs:string"/>
+  <xs:element name="table">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="template"/>
+        <xs:element ref="row_data"/>
+        <xs:element ref="metadata"/>
+        <xs:element ref="misc"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="row_data">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="row"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="row">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="field"/>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element ref="metadata"/>
+          <xs:element ref="update_type"/>
+        </xs:choice>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="field" type="xs:string"/>
+  <xs:element name="update_type" type="xs:anyURI"/>
+  <xs:element name="misc">
+    <xs:complexType/>
+  </xs:element>
+  <xs:element name="template" type="xs:NCName"/>
+  <xs:element name="metadata">
+    <xs:complexType/>
+  </xs:element>
+</xs:schema>

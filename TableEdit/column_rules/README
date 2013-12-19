@@ -1,0 +1,65 @@
+== Column rules in TableEdit.==
+
+TableEdit includes a Hook to allow customization of the user interface for specific fields in tables. 
+Originally, TableEdit had code for these in the methods TableEdit::apply_column_rules. As our use of
+TableEdit became more complex, we added a hook to allow TableEdit to be extended with new column rules.
+
+In defining templated tables, the syntax for each line in <headings/> is
+
+	Display_heading||field_var_name|column_rule|column_rule_option_1|column_rule_option_2 ... etc.
+	
+	Display_heading:	what is shown in the wiki page
+	field_var_name:  	a hash key assigned to the data
+	column_rule:    	the name of the column rule to run
+	options..."     	data passed to the column rule, e.g. menu options
+
+By default, TableEdit assumes that the user will edit content in cells in a table using a textarea text
+entry field. Column rules that are still built into TableEdit include
+
+	select       	pull down menu of options
+	checkbox     	checkboxes of the options. Displays selected items as bulleted list
+	text        	single line input
+	timestamp   	timestamp as date("Y-m-d" $row->timestamp)
+	foreign     	lookup from another table. More specific column rules are probably better than this
+	             	general method
+	calc        	calculations	
+
+
+This directory includes a mix of older column rules and newer ones that take advantage of an abstract 
+class for making new column rules. Eventually, we plan to deprecate the older ones and/or replace them
+with the newer type.
+
+== Writing new column rules ==
+A new column rule extension should include the following:
+
+	an entry in column_rule_settings.php to register the column_rule name and assign the code that will handle it.
+	
+	examples
+	
+		$te_column_rules = array(
+			'test_rule' => $dir . 'test_rule.php',
+			'dbxref' => $dir . 'dbxref.php',
+			'multifield' => $dir . 'multifield.php',
+			...
+		);	
+	
+	an object that extends class TableEdit_Column_rule. column rule class names must be in the format "ecTableEdit_".$tag.
+	for example, the test_rule column rule is handled by class ecTableEdit_test_rule. Exceptions need to be coded into column_rules_settings.
+	
+	The new ecTableEdit_ class should overload two methods:
+	
+		function make_form_row(){
+		
+		}
+		
+	This method creates the part of the HTML form that is used in the row editing view
+	
+	and (optionally)
+	
+		function show_data(){
+			return $this->col_data;
+		}
+	
+	This method manipulates how the data is displayed and saved in the database.
+	
+	See test_rule.php for an example.
