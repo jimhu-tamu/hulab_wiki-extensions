@@ -20,6 +20,7 @@ $te_column_rules = array(
 	//'coordinates' => $dir . 'coordinates.php',
 	'units' => $dir . 'units.php',
 	'myrule' => $dir . 'myrule.php',
+	'datetime'     	=> $dir.'datetime.php'
 );
 
 

@@ -732,7 +732,7 @@ class wikiBoxRow{
         		$authorship[ $version->timestamp ] = $m[1];
         	}
         }
-        // sort by the keys (timestamps) in reverse order
+        // sort by the keys (timestamps) in forward order
         ksort($authorship);
         return ( $authorship )
         	? $authorship

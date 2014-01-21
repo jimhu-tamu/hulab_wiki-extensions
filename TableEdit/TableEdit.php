@@ -32,7 +32,7 @@ EOT;
 $wgExtensionCredits['specialpage'][] = array(
 	'name' 			=> 'TableEdit',
 	'author' 		=> array('Jim Hu', '[mailto:bluecurio@gmail.com Daniel Renfro]'),
-	'version'		=> '1.0.12',
+	'version'		=> '1.0.13',
 	'description' 	=> 'adds a forms-based table editor as a special page',
 	'url' 			=> 'http://gmod.org/TableEdit'
 );

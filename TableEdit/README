@@ -13,6 +13,10 @@ installer needs rewriting.
 
 Changelog
 ----------------
+version 1.0.13
+- add datetime column rule (todo: implement js datetime picker)
+- minor bug fixes and comment fixes
+----------------
 version 1.0.12
 - add preprocessing for column rules
 - add CACAO filter on evidence codes
