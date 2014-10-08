@@ -49,4 +49,4 @@ class DemoOnDemand{
 		return false;
 	}
 }
-?>
+

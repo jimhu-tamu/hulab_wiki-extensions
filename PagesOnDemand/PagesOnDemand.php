@@ -25,6 +25,9 @@
  * @author Jim Wilson (wilson.jim.r@gmail.com)
  * @copyright Copyright 2007, Jim Hu & Jim Wilson 
  * @license http://www.gnu.org/copyleft/gpl.html GNU General Public License 2.0 or later
+ 
+ Version 0.2 changes redirection method when page is created. Requires MW 1.18 or later because it uses
+ requestcontext object to get an output object.
  */
 
 if ( ! defined( 'MEDIAWIKI' ) ) die();
@@ -34,7 +37,7 @@ $wgExtensionCredits['other'][] = array(
     'name'=>'PagesOnDemand',
     'author'=>'Jim Hu &lt;jimhu@tamu.edu&gt; and Jim Wilson &lt;wilson.jim.r@gmail.com&gt;',
     'description'=>'Provides mechanism for generating wiki articles on demand.',
-    'version'=>'0.1'
+    'version'=>'0.2'
 );
 
 # Register hooks
@@ -48,7 +51,7 @@ $wgExtensionMessagesFiles['PagesOnDemand'] = dirname( __FILE__ ) . '/PagesOnDema
 * @param Article $article The Article of this request (should usually be null).
 * @return true (always)
 */
-function wfPagesOnDemand( $title, $article ) {
+function wfPagesOnDemand( $title, $article, $context ) {
 
         # Short-circuit if the article already exists
         if ( $title->exists()  || preg_match('/\//', $title->getDBkey() ) ) {
@@ -60,20 +63,11 @@ function wfPagesOnDemand( $title, $article ) {
 	
 	# If the article was created, ensure that 'action=edit' will forward to article view.
 	if ( !$result && is_object($article) && $article->exists() ) {
-		global $wgHooks;
-		$wgHooks['AlternateEdit'][] = 'wfSkipToArticleView';
+		$out = $context->getOutput();
+		$out->redirect($title->getFullURL());
+		return false;
 	}
 
 	# Give other extensions a chance to run.
 	return true;
 }
-
-/**
-* Forwards to Article->view() - meant to be attached to 'AlternateEdit' dynamically.
-* @param EditPage $editPage An instance of EditPage whose mArticle will be viewed.
-*/
-function wfSkipToArticleView ( $editPage ) {
-	$editPage->mArticle->view();
-	return false;
-}
-?>

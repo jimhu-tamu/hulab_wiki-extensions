@@ -39,7 +39,10 @@ function wfLoadPubmedPageOnDemand( Title $title, $article ){
 	if ( $title->getNamespace() != NS_MAIN || !preg_match('/^PMID:\\d+$/', $myTitle ) ) {
 		return true;
 	}
-	return PMIDpageOnDemand::execute($myTitle);
+	# replace the article object with one created with the fixed title
+	$article = PMIDpageOnDemand::execute($myTitle);
+	# All done (returning false to kill PoD's wfRunHooks stack)
+	return false;
 }
 
 class PMIDpageOnDemand{
@@ -76,7 +79,7 @@ class PMIDpageOnDemand{
 		$article = new Article($title);
 		# check again that the page doesn't already exist (we previously checked the original title, not the redirected one)
 		if (!$title->exists() || $title->isDeleted()){
-			$article->doEdit( '', 'New PMID: Page!', EDIT_NEW | EDIT_FORCE_BOT );
+			$article->doEdit( 'PMID on Demand placeholder', 'New PMID: Page!', EDIT_NEW | EDIT_FORCE_BOT );
 		
 			#fill TableEdit table if it exists
 			if (class_exists('TableEdit') && strpos($text, 'Template:PMID_info_table') > 0){
@@ -98,9 +101,8 @@ class PMIDpageOnDemand{
 			}		
 			$article->doEdit( $text, 'Fill PMID: Page!', EDIT_UPDATE | EDIT_FORCE_BOT | EDIT_SUPPRESS_RC );
 		}	
-
-		# All done (returning false to kill PoD's wfRunHooks stack)
-		return false;
+		# replace the article object in the call function with this one
+		return $article;
 	}
 
 	static function format_citation_parts(PMIDeFetch $paper){
