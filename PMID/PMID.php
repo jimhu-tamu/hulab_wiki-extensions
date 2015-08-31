@@ -13,12 +13,11 @@ Classes for using NCBI EUtils.
 */
 
 $wgExtensionCredits['other'][] = array(
-    'name'=>'PMID_OnDemand',
+    'name'=>'PMID',
     'author'=>'Jim Hu &lt;jimhu@tamu.edu&gt;',
-    'description'=>'Objects for using National Library of Medicine PubMed database via NCBI EUtils.',
+    'description'=>'Object classes for using National Library of Medicine PubMed database via NCBI EUtils.',
     'version'=>'0.1'
 );
-
 
 // autoload classes
 $wgAutoloadClasses['PMIDeFetch'] =  dirname(__FILE__)."/class.PMIDeFetch.php";
