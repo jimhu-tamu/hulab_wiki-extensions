@@ -51,12 +51,12 @@ $wgExtensionMessagesFiles['PagesOnDemand'] = dirname( __FILE__ ) . '/PagesOnDema
 * @param Article $article The Article of this request (should usually be null).
 * @return true (always)
 */
-function wfPagesOnDemand( $title, $article, $context ) {
+function wfPagesOnDemand( $title, $article, $context = null ) {
 
-        # Short-circuit if the article already exists
-        if ( $title->exists()  || preg_match('/\//', $title->getDBkey() ) ) {
-                return true;
-        }
+	# Short-circuit if the article already exists or no context object
+	if ( $title->exists()  || preg_match('/\//', $title->getDBkey() || $context === null ) ) {
+			return true;
+	}
 
 	# Run PageOnDemand hooks provided by extension modules.
 	$result = wfRunHooks( 'PagesOnDemand', array( &$title, &$article ) );

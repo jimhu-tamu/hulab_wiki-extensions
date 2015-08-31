@@ -83,7 +83,6 @@ class PMIDpageOnDemand{
 		
 			#fill TableEdit table if it exists
 			if (class_exists('TableEdit') && strpos($text, 'Template:PMID_info_table') > 0){
-			#	$dbr =& wfGetDB( DB_SLAVE );
 				$box = new wikiBox;
 				$box->page_uid = $article->getID();
 				$box->page_name = $myTitle;
