@@ -254,7 +254,7 @@ class TableEdit_MirrorAnnotations{
 	}
 
 	function getBoxUid($page_name, $template=''){
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$conditions['page_name'] =  $page_name;
 		$conditions['template'] = str_replace(' ', '_', $template);
 		$result = $dbr->select('ext_TableEdit_box', 'box_uid', $conditions, __METHOD__);

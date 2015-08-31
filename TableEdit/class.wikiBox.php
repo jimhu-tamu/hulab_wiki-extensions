@@ -84,7 +84,7 @@ class wikiBox {
 		$templatePage = Revision::newFromTitle(Title::makeTitle(NS_TEMPLATE, $this->template));
 
 		if (! $templatePage){
-			$this->headings = "[["  .wfMsg('template') . ":" . $this->template . "]] " . wfMsg('notFound');
+			$this->headings = "[["  .wfMessage('template')->text() . ":" . $this->template . "]] " . wfMessage('notFound')->text();
 		}else{
 			$template_text = '<xml>'.trim($templatePage->getText()).'</xml>';
 			$xml_parser = xml_parser_create();
@@ -152,7 +152,7 @@ class wikiBox {
 	function set_template_from_headings(){
 		$headings_from_box = explode("\n", $this->headings);
 		$headings_from_box = $this->prepare_array_for_comparison($headings_from_box);
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select('page', 'page_title', 'page_namespace = "10"', __METHOD__);
 		//set up a hash for use later.
 		if(!isset($this->table_template_headings)) {
@@ -207,7 +207,7 @@ class wikiBox {
 
 	function make_rows_from_DB(){
 		# Get the row data
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select('ext_TableEdit_row','*',"box_id = '".$this->box_id."'",__METHOD__,array('ORDER BY'=>'row_sort_order'));
 	#	print_r($result);
 		$rows = array();
@@ -249,9 +249,21 @@ class wikiBox {
 	function rownum(){
 		return count($this->rows);
 	}
-	function get_row($row_index){
+	public function get_row($row_index){
 		if (isset($this->rows[$row_index])) return $this->rows[$row_index];
 		return false;
+	}
+
+	function get_row_hash($row_index){
+		$hash = array();
+		if(isset($this->rows[$row_index])){
+			$row = $this->rows[$row_index];
+			$values = explode('||', $row->row_data);
+			foreach($values as $i => $val){
+				$hash[$this->column_names[$i]] = $val;
+			}
+		}
+		return $hash;
 	}
 
 	function insert_row($data, $owner='', $style=''){
@@ -302,7 +314,7 @@ class wikiBox {
 			return false;
 		}
 
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$r = $dbr->select(
 			'page_title',
 			'page',
@@ -326,7 +338,7 @@ class wikiBox {
 	function save_to_db(){
 
 		global $wgUser;
-		$dbw =& wfGetDB( DB_MASTER);
+		$dbw = wfGetDB( DB_MASTER);
 
 		$save_time = time();
 		if (!isset($this->headings) && isset($this->template)) {
@@ -417,7 +429,7 @@ class wikiBox {
 		if (isset($this->template) && !empty($this->template)) {
 			$conds[] = "template = '" . $this->template . "'";
 		}
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select('ext_TableEdit_box', '*', $conds ,__METHOD__ );
 		if ($dbr->numRows($result) != 1) return false;
 		$x = $dbr->fetchObject ( $result );
@@ -472,7 +484,7 @@ class wikiBox {
 			$r->delete_row();
 		}
 		// delete the box
-		$dbw =& wfGetDB( DB_MASTER );
+		$dbw = wfGetDB( DB_MASTER );
 		return $dbw->delete(
 			'ext_TableEdit_box',
 			array( 'box_id = ' . $this->box_id ),
@@ -518,7 +530,7 @@ class wikiBox {
 			$box_metadata->delete();
 			$box_metadata->db_save();
 		}
-		$dbw =& wfGetDB( DB_MASTER);
+		$dbw = wfGetDB( DB_MASTER);
 		return $dbw->delete('ext_TableEdit_box', array("box_id = '".$this->box_id."'"),__METHOD__);
         */
         return $this->delete();
@@ -526,7 +538,7 @@ class wikiBox {
 
 	function set_metadata_fromDb(){
 		$this->box_metadata = array();
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select('ext_TableEdit_box_metadata','*',array("box_id = '".$this->box_id."'"),__METHOD__);
 		if (!$result || count($dbr->numRows($result)) == 0){
 			return true;
@@ -716,7 +728,7 @@ class wikiBoxRow{
     		return false;
     	}
 
-        $dbr =& wfGetDB( DB_SLAVE );
+        $dbr = wfGetDB( DB_SLAVE );
         $result = $dbr->select(
             'ext_TableEdit_row_metadata',
             array('row_metadata', 'timestamp'),
@@ -846,7 +858,7 @@ class wikiBoxRow{
 	function set_fromDb(){
 		if ($this->row_id === null) return;
 		#check both box_id and row_id in case of screwups
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select(
 			'ext_TableEdit_row',
 			'*',
@@ -893,7 +905,7 @@ class wikiBoxRow{
 	 */
 	function query_relations_table( $row, $type = 'both'){
 		if(is_null($row->row_id) || empty($row->row_id)) return false;
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$conds = array();
 		switch(trim($type)){
 			case 'to':
@@ -926,7 +938,7 @@ class wikiBoxRow{
 	 *
 	 */
  	function insert_relation($from_row, $from_field, $to_row, $to_field) {
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
  		$values = array(
 			'from_row' 	  => $from_row,				// not NULL
 			'from_field'  => $from_field,
@@ -937,7 +949,7 @@ class wikiBoxRow{
  	}
 
 	function delete_relation( $rel_id ){
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		return $dbr->delete('ext_TableEdit_relations', array("rel_id = '" . $rel_id . "'"), __METHOD__);
 	}
 
@@ -947,7 +959,7 @@ class wikiBoxRow{
 	}
 
 	public function exists() {
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->selectRow(
 			'ext_TableEdit_row', 
 			'row_id',
@@ -968,7 +980,7 @@ class wikiBoxRow{
 		$changed = 0;
 		# $this->row_id set when data previously pulled from database
 		# for a row only set in temp space, should be undef
-		$dbw =& wfGetDB( DB_MASTER );
+		$dbw = wfGetDB( DB_MASTER );
 
 		$timestamp = time();
 
@@ -1011,6 +1023,7 @@ class wikiBoxRow{
 
 				# it's in the DB and it's current, update it, but only if the row data has changed
 				$a = array(
+					'box_id'        	=>	$this->box_id,
 					'owner_uid'     	=>	$this->owner_uid,
 					'row_data'      	=>	$this->row_data,
 					'row_style'       	=>	$this->row_style,
@@ -1095,7 +1108,7 @@ class wikiBoxRow{
 
 	function set_metadata_fromDb(){
 		$this->row_metadata = array();
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select('ext_TableEdit_row_metadata','*',array("row_id = '".$this->row_id."'"),__METHOD__);
 		if (!$result || count($dbr->numRows($result)) == 0){
 			return true;
@@ -1144,7 +1157,7 @@ class wikiBoxRowMetadata extends tableEditMetadata{
 	}
 	
     function delete(){
-		$dbw =& wfGetDB( DB_MASTER );
+		$dbw = wfGetDB( DB_MASTER );
 		return $dbw->delete(
 			$this->table_name,
 			array( $this->primary_key_field . ' = ' . $this->row_metadata_id ),
@@ -1165,7 +1178,7 @@ class wikiBoxMetadata extends tableEditMetadata{
 	}
 
 	function delete(){
-		$dbw =& wfGetDB( DB_MASTER );
+		$dbw = wfGetDB( DB_MASTER );
 		return $dbw->delete(
 			$this->table_name,
 			array( $this->primary_key_field . ' = ' . $this->box_metadata_id ),
@@ -1185,7 +1198,7 @@ class tableEditMetadata{
 		$primary_key = $this->primary_key_field;
 		$foreign_key = $this->foreign_key_field;
 		$metadata = $this->metadata_field;
-		$dbw =& wfGetDB( DB_MASTER );
+		$dbw = wfGetDB( DB_MASTER );
 		if ($this->metadata == '') return 0; # don't save empty
 		if ( !isset($this->$primary_key) || $this->$primary_key == '' ) {
 			$a = array(

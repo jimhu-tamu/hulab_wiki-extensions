@@ -9,8 +9,8 @@ See the README for other requirements for implementing a new column rule
 class ecTableEdit_test_rule extends TableEdit_Column_rule{
 	# the constructor instantiates the object. In this case it could be
 	# omitted, but use this to do additional initialization
-	function __construct($te, $box, $rule_fields, $row_data, $col_index){
-		parent::__construct($te, $box, $rule_fields, $row_data, $col_index);
+	function __construct($te, $box, $rule_fields, $row_id, $row_data, $col_index){
+		parent::__construct($te, $box, $rule_fields, $row_id, $row_data, $col_index);
 	}
 
 	/*

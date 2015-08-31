@@ -48,7 +48,7 @@ $wgExtensionCredits['other'][] = array(
 
 $wgHooks['TableEditApplyColumnRules'][] = 'ef_TableEdit_PSDD';
 
-function ef_TableEdit_PSDD( $te, $rule_fields, $box, $row_data, $i, $type ){
+function ef_TableEdit_PSDD( $te, $rule_fields, $box, $row_id, $row_data, $i, $type ){
 
 	$column_rule_type 	= array_shift($rule_fields);
 	if ($column_rule_type != 'page-specific-dropdown') return true;

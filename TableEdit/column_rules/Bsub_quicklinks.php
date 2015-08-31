@@ -12,7 +12,7 @@ $wgExtensionCredits['other'][] = array(
 # Register hooks ('TableEditApplyColumnRules' hook is provided by the TableEdit extension).
 $wgHooks['TableEditApplyColumnRules'][] = 'efTableEditQuickLinksColumn';
 
-function efTableEditQuickLinksColumn( $te, $rule_fields, $box, $row_data, $i, $type ){
+function efTableEditQuickLinksColumn( $te, $rule_fields, $box, $row_id, $row_data, $i, $type ){
 	global $wgParser, $wgTitle, $wgUser;
 	if (!in_array($rule_fields[0], array( 'quicklinks')) ) return true;
 
@@ -44,7 +44,7 @@ class ecTableEditQuicklinks{
 	}
 
 	function get_gene_lists(){
-		$dbr = & wfGetDB( DB_SLAVE );
+		$dbr =  wfGetDB( DB_SLAVE );
 		$list = array();
 		$result = $dbr->select(
 			'page',
@@ -89,7 +89,7 @@ class ecTableEditQuicklinks{
 
 
 	public function links_as_array() {
-		$dbr = & wfGetDB( DB_SLAVE );
+		$dbr =  wfGetDB( DB_SLAVE );
 		$tmp = explode(':',$this->box->page_name);
 
 		#print_r($tmp);

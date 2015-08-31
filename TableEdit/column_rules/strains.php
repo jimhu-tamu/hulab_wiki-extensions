@@ -12,13 +12,13 @@ $wgExtensionCredits['other'][] = array(
 # Register hooks ('TableEditApplyColumnRules' hook is provided by the TableEdit extension).
 $wgHooks['TableEditApplyColumnRules'][] = 'efTableEdit_strains';
 
-function efTableEdit_strains( $te, $rule_fields, $box, $row_data, $i, $type ){
+function efTableEdit_strains( $te, $rule_fields, $box, $row_id, $row_data, $i, $type ){
 	global $wgParser, $wgTitle, $wgUser;
 
 	if (!in_array($rule_fields[0], array( 'strains_lookup')) ) return true;
 	
 	// get a databaes handle
-	$dbr =& wfGetDB( DB_SLAVE );
+	$dbr = wfGetDB( DB_SLAVE );
 	
 	// pull out the SQL to run, query 
 	

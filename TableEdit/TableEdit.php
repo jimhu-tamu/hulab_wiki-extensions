@@ -32,7 +32,7 @@ EOT;
 $wgExtensionCredits['specialpage'][] = array(
 	'name' 			=> 'TableEdit',
 	'author' 		=> array('Jim Hu', '[mailto:bluecurio@gmail.com Daniel Renfro]'),
-	'version'		=> '1.0.13',
+	'version'		=> '1.1.1',
 	'description' 	=> 'adds a forms-based table editor as a special page',
 	'url' 			=> 'http://gmod.org/TableEdit'
 );
@@ -69,7 +69,7 @@ function wfTableEdit_MovePage( &$title, &$newtitle, &$user, $oldid, $newid ) {
 
 	// Does ANYONE know how to do this *correctly*?? DPR
 
-	$dbw =& wfGetDB( DB_MASTER );
+	$dbw = wfGetDB( DB_MASTER );
 	$sql = 'UPDATE ext_TableEdit_box
 	        SET page_name = (
 	        	SELECT DISTINCT(page_title)
@@ -244,10 +244,21 @@ function wfDeleteTables(&$article, &$user, $reason, $id){
 function efTableEdit_RegisterModules( $resourceLoader ) {
 	global $wgResourceModules;
 	$wgResourceModules['ext.TableEdit'] = array(
-		'scripts' => array('js/jquery.dataTables.js', 'js/init_datatables.js'),
-		'styles' => array('css/main.css'),
+		'scripts' => array(
+		#	'js/jquery.dataTables.js', 
+		#	'DataTables/datatables.min.js',
+			'js/init_datatables.js'
+			),
+		'styles' => array(
+			'css/main.css', 
+		#	'DataTables/datatables.min.css'
+			#'css/demo_table.css', 
+			#'css/demo_table_jui.css'
+			),
 		'localBasePath' => __DIR__,
-		'remoteExtPath' => 'TableEdit'
+		'remoteExtPath' => 'TableEdit',
+		# use the DataTables extension to provide access to the JQuery Datatables plugin
+		'dependencies' => array('ext.datatables')
 	);
 	return true;
 }

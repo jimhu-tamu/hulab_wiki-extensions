@@ -14,10 +14,8 @@ Units can have spaces, as in 5 golden rings.  But the unit can't start with "oth
 */
 class ecTableEdit_units extends TableEdit_Column_rule{
 
-	function __construct($te, $box, $rule_fields, $row_data, $col_index){
-		parent::__construct($te, $box, $rule_fields, $row_data, $col_index);
-	}
-
+	# constructor from parent
+	
 	function make_form_row(){
 		# adjust the menu options
 		$options = array_slice($this->rule_fields, 1);

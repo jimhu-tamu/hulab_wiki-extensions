@@ -7,11 +7,8 @@ See the README for other requirements for implementing a new column rule
 
 # the class name must be ecTableEdit_ followed by the name of the column rule
 class ecTableEdit_datetime extends TableEdit_Column_rule{
-	# the constructor instantiates the object. In this case it could be
-	# omitted, but use this to do additional initialization
-	function __construct($te, $box, $rule_fields, $row_data, $col_index){
-		parent::__construct($te, $box, $rule_fields, $row_data, $col_index);
-	}
+
+	# constructor inherited
 
 	/*
 	This method overloads make_form_row in the abstract class. Make two input box using the jquery ui datetime

@@ -1,5 +1,8 @@
 <?php
-
+/*
+Deprecated
+*/
+die('This script is deprecated use cleanup.php')
 function help() {
 	echo <<<USAGE
 USAGE:
@@ -91,7 +94,7 @@ if ( isset($params['d']) || isset($params['dry-run']) ){
 }
 
 // connect to the database
-$dbw =& wfGetDB( DB_MASTER );
+$dbw = wfGetDB( DB_MASTER );
 
 // get a list of all boxes in the database
 $box_table_result = $dbw->select(

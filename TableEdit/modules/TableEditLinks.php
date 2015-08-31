@@ -42,11 +42,13 @@ abstract class TableEditLinker{
 			$old = $table;
 			preg_match('/title=Special:TableEdit\&id=(.*?)\&/',$table, $ids);
 			$box = new wikiBox();
-			$box->box_uid = $ids[1];
-			$box->set_from_DB();
-			$table = $this->generic_links($table);
-			$table = $this->table_specific_links($table, $box->template);
-			$this->text = str_replace($old, $table, $this->text);
+			if(isset($ids[1])){
+				$box->box_uid = $ids[1];
+				$box->set_from_DB();
+				$table = $this->generic_links($table);
+				$table = $this->table_specific_links($table, $box->template);
+				$this->text = str_replace($old, $table, $this->text);
+			}
 		}		
 		return $this->text;
 	}
@@ -72,15 +74,15 @@ abstract class TableEditLinker{
 		# Do links to PMID pages
 		$table = str_replace("PMID:\n",'PMID:', $table);
 		$table = preg_replace('/PMID:([ _]|%20)*/','PMID:', $table);
-		$pattern = "/(?<![\[\'\"=])PMID:\d+/"; # uses "lookbehind" to find bare-PMIDs
+		$pattern = "/(?<![\[\'\"=])PMID:\d+\b/"; # uses "lookbehind" to find bare-PMIDs
 
 		preg_match_all($pattern, $table, $matches);	
 		foreach (array_unique($matches[0]) as $i => $match){
 			$replacement = "[[$match]]<ref name='$match' />";
 			# replace bare PMIDs
-			$table = preg_replace("/(?<![\|\'\"=])$match(?![\]\'\"])/", "$replacement", $table);
+			$table = preg_replace("/(?<![\|\'\"=])$match(?![\]\'\"])\b/", "$replacement", $table);
 			# add ref tag to linked PMIDs w/o ref tag
-			$table = preg_replace("/\[\[$match\]\](?!\<ref)/", "$replacement", $table);
+			$table = preg_replace("/\[\[$match\]\](?!\<ref)\b/", "$replacement", $table);
 		}
 		return $table;
 	}	
@@ -126,7 +128,7 @@ abstract class TableEditLinker{
 			# InterPro
 			"/InterPro:(IPR\d+)/" 	=> "[http://www.ebi.ac.uk/interpro/DisplayIproEntry?ac=%s %s]",
 			# UniProtKB
-			"/UniProtKB:([A-Za-z0-9]+)/" => "[http://www.uniprot.org/keywords/%s %s]",
+			"/UniProtKB:([A-Za-z0-9]+)/" => "[http://www.uniprot.org/uniprot/%s %s]",
 			# CheBI
 			"/CHEBI:(\d+)/"  => "[http://www.ebi.ac.uk/chebi/searchId.do?chebiId=/%s %s]",
 			# HAMAP

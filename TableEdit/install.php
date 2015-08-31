@@ -55,7 +55,7 @@ function new_dbsource( $fname, $db = false ) {
 			$db =& $wgDatabase;
 		} else {
 			// No? Well, we must be outside of those scripts, so use the standard method
-			$db =& wfGetDB( DB_MASTER );
+			$db = wfGetDB( DB_MASTER );
 		}
 	}
 	$error = $db->sourceFile( $fname );

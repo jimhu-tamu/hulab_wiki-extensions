@@ -1,5 +1,6 @@
 <?php
 # Column rules for TableEdit templates related to GO annotations
+# DEPRECATED, use go_annotation2.php
 
 # Credits
 $wgExtensionCredits['other'][] = array(
@@ -14,7 +15,7 @@ $GO_ANNOTATION_CALLED=0;
 # Register hooks ('TableEditApplyColumnRules' hook is provided by the TableEdit extension).
 $wgHooks['TableEditApplyColumnRules'][] = 'efTableEditGOannoColumn';
 
-function efTableEditGOannoColumn( $te, $rule_fields, $box, $row_data, $i, $type ){
+function efTableEditGOannoColumn( $te, $rule_fields, $box, $row_id, $row_data, $i, $type ){
 	global $wgParser, $wgTitle, $wgUser;
 
 	if (!in_array($rule_fields[0], array( 'go_annotation')) ) return true;
@@ -157,7 +158,7 @@ class ecTableEditGOanno{
 				if (!isset($go_id) || $go_id == ''){
 					$missing[] = 'GO ID';
 				}else{
-					$dbr =& wfGetDB( DB_SLAVE );
+					$dbr = wfGetDB( DB_SLAVE );
 					$sql = "SELECT * from GO_archive.term WHERE go_id = '$go_id'";
 					$result = $dbr->query($sql);
 					$x = $dbr->fetchObject ( $result );

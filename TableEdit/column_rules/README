@@ -34,14 +34,14 @@ A new column rule extension should include the following:
 
 	an entry in column_rule_settings.php to register the column_rule name and assign the code that will handle it.
 	
-	examples
+		examples
 	
-		$te_column_rules = array(
-			'test_rule' => $dir . 'test_rule.php',
-			'dbxref' => $dir . 'dbxref.php',
-			'multifield' => $dir . 'multifield.php',
-			...
-		);	
+			$te_column_rules = array(
+				'test_rule' => $dir . 'test_rule.php',
+				'dbxref' => $dir . 'dbxref.php',
+				'multifield' => $dir . 'multifield.php',
+				...
+			);	
 	
 	an object that extends class TableEdit_Column_rule. column rule class names must be in the format "ecTableEdit_".$tag.
 	for example, the test_rule column rule is handled by class ecTableEdit_test_rule. Exceptions need to be coded into column_rules_settings.
@@ -52,7 +52,13 @@ A new column rule extension should include the following:
 		
 		}
 		
-	This method creates the part of the HTML form that is used in the row editing view
+		This method creates the part of the HTML form that is used in the row editing view. TableEdit expects the field inputs to have the 
+	
+			name = field[$this->col_index]. 
+	
+		If you have more than one input of any kind that is supposed to be transmitted to the column data, then use a 2-D array
+	
+			name = field[$this->col_index][]
 	
 	and (optionally)
 	
@@ -60,6 +66,17 @@ A new column rule extension should include the following:
 			return $this->col_data;
 		}
 	
-	This method manipulates how the data is displayed and saved in the database.
+		This method manipulates how the data is displayed and saved in the database.
 	
-	See test_rule.php for an example.
+			See test_rule.php for an example.
+			
+== field validation ==
+You can use object methods to do field validation and send messages to $this->error. 
+Set 
+
+	$this->row_save_ok = false;
+	
+to block saving of bad data.	
+		
+	
+	

@@ -1,5 +1,8 @@
 <?php
-
+/*
+TableEdit class is a controller for manipulating box objects and 
+editing pages with TableEdit tables
+*/
 class TableEdit extends SpecialPage{
 
 	private $diagnostics = false;
@@ -13,6 +16,7 @@ class TableEdit extends SpecialPage{
 		$this->view_history = array('');
 		$this->msg = array();
 		$this->row_save_ok = true;
+		$this->userCan = array(); #hash of user permissions
 		#self::loadMessages();
 		return true;
 	}
@@ -25,8 +29,11 @@ class TableEdit extends SpecialPage{
 			$this->setHeaders();
 			$output = $this->initialize();
 			if ($this->page_name !=''){
+				$this->setUserPermissions($wgUser);
 				$this->set_title();
 				$this->set_box();
+				if(!is_a($this->box,'wikiBox'))	throw new Exception('boxNotFound');
+
 				$this->set_view($this->box);
 			}else{
 				# catch arrival from Special:Specialpages; page name not set
@@ -45,6 +52,7 @@ class TableEdit extends SpecialPage{
 			$output .= TableEditView::text2html($this->box->help1);
 			switch ($this->act['view']){
 				case 'add_multiple':
+					if(!$this->userCan['edit']) Throw new Exception('insufficientRights');
 					$output .= TableEditView::add_multiple_view($this, $this->box);
 					break;
 				case 'box_dump':
@@ -57,9 +65,12 @@ class TableEdit extends SpecialPage{
 					$output .= TableEditView::doc_view($this->previous_view);
 					break;
 				case 'edit_headings':
+					if(!$this->userCan['edit']) Throw new Exception('insufficientRights');
 					$output .= TableEditView::edit_head_view($this, $this->box);
 					break;
 				case 'edit_row':
+					wfRunHooks( 'TableEditBeforeEditRowView', array($this)  );			
+					if(!$this->userCan['edit']) Throw new Exception('insufficientRights');
 					$output .= TableEditView::edit_row_view($this, $this->box, $this->row);
 					break;
 				case 'fix_duplicate_tables':
@@ -77,13 +88,14 @@ class TableEdit extends SpecialPage{
 					$this->save_to_page($this->titleObj, $this->box);
 					break;
 				case 'delete':
-					$output .= TableEditView::msg_view($this, wfMsg('confirmDelete'),array('force_delete'=>'delete'));
+					if(!$this->userCan['delete']) Throw new Exception('insufficientRights');
+					$output .= TableEditView::msg_view($this, wfMessage('confirmDelete')->text(),array('force_delete'=>'delete'));
 					break;
 				case 'force_delete':
 					$this->save_to_page($this->titleObj, $this->box,'delete');
 					break;
 				case 'revert':
-					$output .= TableEditView::msg_view($this, wfMsg('confirmRevert'), array('nav' => 'force_revert'));
+					$output .= TableEditView::msg_view($this, wfMessage('confirmRevert')->text(), array('nav' => 'force_revert'));
 					break;
 				case 'csv':
 					$this->do_csv_download( $this->box );
@@ -121,49 +133,56 @@ class TableEdit extends SpecialPage{
 	function initialize($reenter = false){
 		global $wgRequest, $wgUser,$wgServer,$wgScriptPath;
 		$output = '';
-		$this->browser_tab = $wgRequest->getText('browser_tab');
-		$this->act = array(
-			'view'   	=> $wgRequest->getText('view'),
-			'act'   	=> $wgRequest->getText('act')
-			);
+		
+		# set object properties. This uses a loader to clean up lots of wgRequest calls
+		# and to improve readability
+		$props = array(
+			'act'       	=> array(
+								'view' => 'view', 
+								'act'=>'act'
+								),
+			'browser_tab' 	=> 'browser_tab',
+			'box_req'   	=> array(
+								'box_id'    => 'id', 
+								'page_uid'  => 'page', 
+								'pagename'  => 'pagename' ,
+								'template'  => 'template',
+								'type'      => 'type',
+								'box_style'	=> 'box_style'
+								),
+			'row_req'     	=> array(
+								'owner' 	=> 'row_owner',
+								'data'   	=> 'row_data',
+								'style'   	=> 'row_style'								
+								),
+			'new_row'		=> 'new_row',
+			'meta'			=> array(
+								'type'    	=> 'meta_type',
+								'id'      	=> 'meta_id',
+								'data'    	=> 'metadata'
+								),				
+			'bulk_add_form' => 'bulk_add_form',
+			'bulk_add_file' => 'bulk_add_file',
+			'style'     	=> 'style',
+			'conflict'    	=> 'conflict',
+			'headings'  	=> 'headings',
+			'page_name' 	=> 'pagename'
+		);
+		$this->loadPropertiesFromRequest($wgRequest, $props); #$this->print_obj($this,'loaded?');
+		# properties that are not text
+		$this->row_req['index'] = $wgRequest->getInt('row_index');
+		$this->col_index    = $wgRequest->getInt('col_index');
+		$this->back      	= $wgRequest->getInt('back');
 
-		$this->box_req = array(
-			'box_id' 	=> $wgRequest->getText('id'),
-			'page_uid' 	=> $wgRequest->getText('page'),
-			'pagename' 	=> $wgRequest->getText('pagename'),
-			'template'  => $wgRequest->getText('template'),
-			'type'   	=> $wgRequest->getText('type'),
-			'style'   	=> $wgRequest->getText('box_style')
-			);
-
-		$this->row_req = array(
-			'index' 	=> $wgRequest->getInt('row_index'),
-			'owner' 	=> $wgRequest->getText('row_owner'),
-			'data'   	=> $wgRequest->getText('row_data'),
-			'style'   	=> $wgRequest->getText('row_style')
-			);
-
-		$this->new_row = $wgRequest->getText('new_row');
-
-		$this->meta = array(
-			'type' => $wgRequest->getText('meta_type'),
-			'id' => $wgRequest->getText('meta_id'),
-			'data' => $wgRequest->getText('metadata'));
-
-		$this->page_name 	= $wgRequest->getText('pagename');
+		# load form fields
 		$this->field    	= $wgRequest->getArray('field');
 		if (is_array($this->field)){
 			foreach ($this->field as $key => $value){
 				if (is_array($value)) $this->field[$key] = implode("\n",$value);
 			}
 		}
-		$this->bulk_add_form 	= $wgRequest->getText('bulk_add_form');
-		$this->bulk_add_file 	= $wgRequest->getText('bulk_add_file');
-		$this->style     	= $wgRequest->getText('style');
-		$this->conflict    	= $wgRequest->getText('conflict');
-		$this->col_index    = $wgRequest->getInt('col_index');
-		$this->headings 	= $wgRequest->getText('headings');
-		$this->back      	= $wgRequest->getInt('back');
+		
+		# From Firefox?
 		$ff = trim($wgRequest->getText('ff') );
 
 		# get the serialized version if there is a set action
@@ -200,33 +219,62 @@ class TableEdit extends SpecialPage{
 		$extras = '';
 		if (isset($this->row_req['index'])) $extras .="&row_index=".$this->row_req['index'];
 
-		$this->backlink = "<a href='".$this->url."&view=".$this->previous_view.$extras."&back=1'>".wfMsg('back')."</a>";
+		$this->backlink = "<a href='".$this->url."&view=".$this->previous_view.$extras."&back=1'>".wfMessage('back')->text()."</a>";
 		# Set the common header
-		$link = "<a href='".$this->url."&view=doc'>".wfMsg('helpTableEdit')."</a>";
+		$link = "<div style='float:right;font-size:small;'><a href='".$this->url."&view=doc'>".wfMessage('helpTableEdit')->text()."</a></div>";
 		if ($this->act['view'] == 'doc') $link = $this->backlink;
 		if ($this->page_name == '') $link = '';
 		$output .= "\n<h2><span class = 'editsection'>$link</span>".str_replace('_',' ', $this->page_name)."</h2><a id='top'></a>\n";
 
 
 		#Firefox problem
-		if ($this->browser() == 'Firefox' && $this->act['view'] == '' &&  $ff == ''){
+		if ($this->browser($wgRequest) == 'Firefox' && $this->act['view'] == '' &&  $ff == ''){
 			header("Location:". $this->url ."&view=new&foo=" .@$_SESSION[$this->sesskey.'TableEditView']);
 		}
 		$this->uid = $wgUser->getID();
-		if (!$wgUser->isAllowed('edit')) $output .= "<p>".wfMsg('insufficientRights')."</p>";
+		if (!$wgUser->isAllowed('edit')) $output .= "<p>".wfMessage('insufficientRights')->text()."</p>";
 		$this->debug[__METHOD__] = $output;
 		return $output;
 	}
+	/*
+	Load string properties from Request object
+	$props is an associative array of keys and values
+		if the value is an array, the property is assumed to be an array
+	*/
+	private function loadPropertiesFromRequest($request, Array $props){
+		foreach($props as $key => $value){
+			if(is_array($value)){
+				$arr = array();
+				foreach($value as $k => $v){
+					$arr[$k] = $request->getText($v);
+				}
+				$this->$key = $arr;
+			}else{
+				$this->$key = $request->getText($value);
+			}
+		}
+	}
 
-	function browser(){
-		$agent = wfGetAgent(); #echo $agent;
+	function browser($request){
+		$agent = $request->getHeader('USER-AGENT'); #echo $agent;
 		if (strpos($agent,'Safari')) return 'Safari';
 		if (strpos($agent,'Firefox')) return 'Firefox';
 		return '';
 
 	}
+	function setUserPermissions(User $user){
+		$userCan = array(
+			'edit' => $user->isAllowed('edit'),
+			'delete' => $user->isAllowed('delete')
+		);
+		wfRunHooks( 'TableEditUserPermissions', array(&$userCan)  );	
+		$this->userCan = $userCan;
+		return true;
+	}
+
 	# returns a MW title object
 	# has to check that the pagename and the page_uid match and deal with it if it doesn't
+
 	function set_title(){
 		# create a temporary title object from the page name
 		$title = Title::newFromDBkey($this->page_name);
@@ -281,7 +329,7 @@ class TableEdit extends SpecialPage{
 						# the title is for a real page
 						$this->titleObj = $title;
 						$this->page_name = $title->getDBkey();
-						$this->msg[] = wfMsg('copiedOrTranscluded');
+						$this->msg[] = wfMessage('copiedOrTranscluded')->text();
 						$this->set_box(); #recursion!
 					}else{
 						throw new Exception('page_id_mismatch');
@@ -303,7 +351,7 @@ class TableEdit extends SpecialPage{
 	}
 
 	# adjust view based on various cases
-	function set_view($box){
+	function set_view(wikiBox $box){
 		global $wgUser;
 		# first load, act not set
 		if ($this->act['view'] == '' || $this->act['view'] == 'new'){
@@ -329,15 +377,15 @@ class TableEdit extends SpecialPage{
 			case 'conflict':
 				$owner_uid = $box->rows[$this->row_req['index']]->owner_uid;
 				switch($this->act['act']){
-					case wfMsg('copy'):
+					case wfMessage('copy')->text():
 						$this->box->insert_row($this->row_req['data'],$this->row_req['owner'],$this->row_req['style']);
 						break;
-					case wfMsg('delete'):
+					case wfMessage('delete')->text():
 						if($owner_uid == $wgUser->getID()  || $owner_uid == 0 || $wgUser->isAllowed('delete') ){
 							$this->box->delete_row($this->row_req['index']);
 							# not sure this is going anywhere so commented out.
-							#$output.= $this->row_req['index']."<br>".wfMsg('rowDeleted')."!!<br>";
-						}else return "<br>".wfMsg('wrongOwner')."<br>";
+							#$output.= $this->row_req['index']."<br>".wfMessage('rowDeleted')->text()."!!<br>";
+						}else return "<br>".wfMessage('wrongOwner')->text()."<br>";
 						break;
 				}
 
@@ -345,7 +393,7 @@ class TableEdit extends SpecialPage{
 			case 'delete':
 				#delete table
 				if(!$box->user_owned && !$wgUser->isAllowed('delete')){
-					$this->msg[] = wfMsg('cantDeleteTable');
+					$this->msg[] = wfMessage('cantDeleteTable')->text();
 					$this->act['view'] = 'msg';
 				}
 				break;
@@ -359,10 +407,10 @@ class TableEdit extends SpecialPage{
 				}
 				# handle different form actions.
 				switch ($this->act['act']){
-					case wfMsg('addHeading'):
-						$box->append_column(wfMsg('newHeading'));
+					case wfMessage('addHeading')->text():
+						$box->append_column(wfMessage('newHeading')->text());
 						break;
-					case wfMsg('deleteLastHeading'):
+					case wfMessage('deleteLastHeading')->text():
 						$box->remove_column();
 						break;
 					case 'v':
@@ -373,7 +421,7 @@ class TableEdit extends SpecialPage{
 					case '<':
 						$box->shift_cols($this->col_index, -1);
 						break;
-					case wfMsg('save'):
+					case wfMessage('save')->text():
 						$this->act['view'] = 'nav';
 						$box->headings = implode("\n",$this->field);
 						$box->heading_style = $this->style;
@@ -389,6 +437,9 @@ class TableEdit extends SpecialPage{
 					$row = $this->box->rows[$this->row_req['index']];
 					$this->field = explode("||",$row->row_data);
 				}
+				# assume a < should be replaced with htmlentity if it's followed by white space, a decimal point or digit		
+				$this->field = preg_replace('/\<([\s\.\d])/','&lt;$1', $this->field);
+
 				# check fields for unclosed tags and invalid content
 				#$this->print_obj($this->box->column_rules);die;
 				foreach ($this->field as $i => $field){
@@ -407,23 +458,23 @@ class TableEdit extends SpecialPage{
 							$this->row_save_ok = false;
 							$state[$key]--;
 							if($key != 'XML'){
-								array_unshift( $this->msg, "<span style = 'color:red'>".wfMsg('unclosedTag',$key)."</span>" );
+								array_unshift( $this->msg, "<span style = 'color:red'>".wfMessage('unclosedTag',$key)->text()."</span>" );
 							}else{
 								continue;
-								//array_unshift( $this->msg, "<span style = 'color:red'>".wfMsg('unclosedTag','')."</span>" );
+								//array_unshift( $this->msg, "<span style = 'color:red'>".wfMessage('unclosedTag','')->text()."</span>" );
 							}
 						}
 					}
 				}
 				
 				switch ($this->act['act']){
-					case wfMsg('save-row'):
+					case wfMessage('save-row')->text():
 						if ($this->row_save_ok){
 							$this->save_row($this->box);
 							$this->act['view'] = 'nav';
 							break;
 						}
-					case wfMsg('update'):
+					case wfMessage('update')->text():
 					default:
 						$this->row = $box->rows[$this->row_req['index']];
 						$this->row->row_data = implode('||',$this->field);
@@ -434,7 +485,7 @@ class TableEdit extends SpecialPage{
 				break;
 			case 'metadata':
 				switch ($this->act['act']){
-					case wfMsg('delete'):
+					case wfMessage('delete')->text():
 						switch ($this->meta['type']){
 							case 'box':
 								$box->box_metadata[$this->meta['id']]->delete();
@@ -446,7 +497,7 @@ class TableEdit extends SpecialPage{
 						}
 						$box->is_changed = true;
 						break;
-					case wfMsg('add'):
+					case wfMessage('add')->text():
 						switch ($this->meta['type']){
 							case 'box':
 								$box->insert_box_metadata('', $this->meta['data']); $table .= "add box meta";
@@ -458,7 +509,7 @@ class TableEdit extends SpecialPage{
 						}
 						$box->is_changed = true;
 						break;
-					case wfMsg('revertMeta'):
+					case wfMessage('revertMeta')->text():
 						$table .= "revert box meta";
 						$box->set_metadata_fromDb();
 						foreach ($box->rows as $row){
@@ -506,9 +557,9 @@ class TableEdit extends SpecialPage{
 		if(is_object($box)){
 			switch ($this->act['act']){
 				#==	row handling ==
-				case wfMsg('editHeadings'):
+				case wfMessage('editHeadings')->text():
 					if ($box->template != '' && $this->get_template_attribute($box->template, 'HEADING_STYLE') !=''){
-						$this->msg[] = wfMsg('cantEditHeadings', $box->template);
+						$this->msg[] = wfMessage('cantEditHeadings', $box->template)->text();
 						$this->act['view'] = 'msg';
 						break;
 					}
@@ -517,39 +568,42 @@ class TableEdit extends SpecialPage{
 					$this->act['view'] = 'edit_headings';
 					break;
 				case 'restoreheadings':
-					#actuallu restore whole box, as manipulating headings may have deleted data
+					#actually restore whole box, as manipulating headings may have deleted data
 					$box = unserialize($_SESSION[$this->sesskey.'old_box']);
 					break;
 				#==	row handling ==
-				case wfMsg('edit'):
+				case wfMessage('edit')->text():
 					#store the state when leaving for edit_row view, in case user cancels
 					$_SESSION[$this->sesskey.'old_box'] = $box->get_serialized();
 					$this->row = $box->rows[$this->row_req['index']];
 					$this->act['view'] = 'edit_row';
 					break;
-				case wfMsg('addData',wfMsg('row')):
-				case wfMsg('addData',wfMsg('column')):
+				case wfMessage('addData',wfMessage('row')->text())->text():
+				case wfMessage('addData',wfMessage('column')->text())->text():
 					$this->row = $this->box->insert_row('');
 					$this->row_req['index'] = $this->row->row_index;
 					$this->act['view'] = 'edit_row';
 					break;
 				# bulk add from an uploaded file
-				case wfMsg('addMultiple'):
+				case wfMessage('addMultiple')->text():
 					$this->act['view'] = 'add_multiple';
 					break;
-				case wfMsg('copy'):
-					$box->insert_row($this->box->rows[$this->row_req['index']]->row_data,$uid);
+				case wfMessage('copy')->text():
+					$box->insert_row($this->box->rows[$this->row_req['index']]->row_data);
 					$box->is_changed = true;
 					break;
-				case wfMsg('delete'):
+				case wfMessage('delete')->text():
 					$owner_uid = $wgUser->getID();
 					if($owner_uid == $this->row_req['owner']  || $this->row_req['owner'] == 0 || $wgUser->isAllowed('delete') ) {
 						$box->delete_row($this->row_req['index']);
 					}else{
-						$this->msg[] = wfMsg('wrongOwner');
+						$this->msg[] = wfMessage('wrongOwner')->text();
 						return $this->act['view'] = 'msg';
 					}
 					break;
+				case wfMessage('move-row')->text():
+					$this->msg[] = "This will eventually help you move row to a table";
+				break;		
 				case 'restorerow':
 					$old_box = new wikiBox;
 					$i = $this->row_req['index'];
@@ -557,22 +611,22 @@ class TableEdit extends SpecialPage{
 					$box->rows[$i] = $old_box->rows[$i];
 					break;
 				#==	table handling ==
-				case wfMsg('revertToSaved'):
+				case wfMessage('revertToSaved')->text():
 					$this->act['view'] = 'revert';
 					break;
-				case wfMsg('rotate'):
+				case wfMessage('rotate')->text():
 					$box->type = ($this->box->type + 1)%2 ;
 					$box->is_changed = true;
 					break;
-				case wfMsg('force_revert'):
+				case wfMessage('force_revert')->text():
 					$box->set_from_DB();
 					$box->is_changed = false;
 					unset ($_SESSION[$this->sesskey]);
 					break;
-				case wfMsg('undeleteRows'):
+				case wfMessage('undeleteRows')->text():
 					foreach ($box->rows as $row) if (is_object($row)) $row->undelete_row();
 					break;
-				case wfMsg('editBox2',$this->conflict):
+				case wfMessage('editBox2',$this->conflict)->text():
 					# need to preserve box_id and other box data that can't be recovered from the wiki
 					$box->headings = $this->box2->headings;
 					$box->heading_style = $this->box2->heading_style;
@@ -592,7 +646,7 @@ class TableEdit extends SpecialPage{
 					$box->shift_cols($this->col_index, -1);
 					$box->is_changed = true;
 					break;
-				case wfMsg('saveStyles'):
+				case wfMessage('saveStyles')->text():
 					$box->box_style = $this->box_req['style'];
 					$box->heading_style = $this->style;
 					$box->is_changed = true;
@@ -614,20 +668,20 @@ class TableEdit extends SpecialPage{
 		$rows = array(); // will get populated with the rows that we're adding
 
 		switch ($this->act['act']){
-			case wfMsg('save'):
+			case wfMessage('save')->text():
 				$input_data = $this->bulk_add_form;
 				$input_data = str_replace("\t","||",$input_data);
 				$rows = explode("\n",$input_data);
 				break;
-			case wfMsg('load'):
+			case wfMessage('load')->text():
 				$title = Title::newFromText($this->bulk_add_file);
 				$img = wfFindFile($title);
 				if ($img === false){
-					$this->msg[] = $this->bulk_add_file.' '.wfMsg('notFound');
+					$this->msg[] = $this->bulk_add_file.' '.wfMessage('notFound')->text();
 					return false;
 				}
 				if(!in_array($img->getMediaType(), $allowed_types[$upload_type] )){
-					$this->msg[] = wfMsg('wrongType');
+					$this->msg[] = wfMessage('wrongType')->text();
 					return false;
 				}
 				$path = $img->getPath();
@@ -748,7 +802,8 @@ END;
 		// keep running this until convergence, to handle updates that depend on other updates
 		//    eg. column rules that need to run in an order or more than once.
 		$row_data_start = '';
-		while ($row_data_start != $data){
+		$iterations = 0;
+		while ($row_data_start != $data && $iterations < 3){
 			$tmp_row_data = '';
 			$row_data_start = $data;
 			$row_data = explode('||',$data);
@@ -759,13 +814,16 @@ END;
 				$i++;
 			}
 			$data = $tmp_row_data;
+			$iterations ++;
 		}
-		$row->row_data = $data;
-		$row->row_style = $this->row_req['style'];
-		$row->owner_uid = $this->row_req['owner'];
-		$row->is_edited = true;
-		$box->is_changed = true;
-
+		if(	$data != $row->row_data_original 	
+			|| $row->row_style != $this->row_req['style']){	
+			$row->row_data = $data;
+			$row->row_style = $this->row_req['style'];
+			$row->owner_uid = $this->row_req['owner'];
+			$row->is_edited = true;
+			$box->is_changed = true;
+		}
 		// gets called whenever anyone clicks "save" on a row...
 		// NOT when the row is actually saved to the database.
 		wfRunHooks( 'TableEditSaveRow', array( &$this, &$box, &$row, $original_data)  );
@@ -796,7 +854,7 @@ END;
 			# apply rules
 			#TableEdit::print_obj($row_data[$i],"row_data $i");
 			$rule_fields = $box->column_rules[$i];
-			wfRunHooks( 'TableEditBeforeApplyColumnRules', array( &$this, &$rule_fields, &$box, &$row_data, $i, &$type) );
+			wfRunHooks( 'TableEditBeforeApplyColumnRules', array( &$this, &$rule_fields, &$box, $row->row_id, &$row_data, $i, &$type) );
 			if (isset($rule_fields[0])){
 				switch ($rule_fields[0]){
 					# first two cases only are relevant to EDIT mode.  If in SAVE mode, just return the row_data unaltered.
@@ -887,7 +945,7 @@ END;
 							} else throw new Exception('errorFindingPagenameFromSibling');
 						}
 						// grab the foreign row data and headings.
-						$dbr =& wfGetDB( DB_SLAVE );
+						$dbr = wfGetDB( DB_SLAVE );
 						$x = $dbr->selectRow(
 							array('ext_TableEdit_box', 'ext_TableEdit_row'),
 							array('ext_TableEdit_row.row_data','ext_TableEdit_box.headings', 'ext_TableEdit_row.row_id', 'ext_TableEdit_box.box_uid'),
@@ -909,7 +967,8 @@ END;
 								TableEdit::create_edit_table_link($rel_box,  $row->field[$i]['foreign_pagename'], $box->page_name)
 							);
 							$row->field[$i]['message'] .= '</div>';
-						} else {
+						} 
+							else {
 							$foreign_box = new wikiBox($x->box_uid);
 							$foreign_box->set_from_db();
 							// loop through the headings and when we find one that matches, pull the corresponding data
@@ -953,7 +1012,7 @@ END;
 						}
 						break;
 					default:
-						wfRunHooks( 'TableEditApplyColumnRules', array( &$this, $rule_fields, &$box, &$row_data, $i, &$type) );
+						wfRunHooks( 'TableEditApplyColumnRules', array( &$this, $rule_fields, &$box, $row->row_id, &$row_data, $i, &$type) );
 						break;
 				}
 			}
@@ -1000,7 +1059,7 @@ END;
 	 * @param object $box2
 	 * @return bool true for a conflict, false if there isn't one.
 	 */
-	function check_conflict($box, $box2){
+	function check_conflict(wikiBox $box, wikiBox $box2){
 		foreach ($box->rows as $row){
 			$row->row_data = str_replace('PMID: ','PMID:', $row->row_data);
 			$row->matched = false;
@@ -1052,18 +1111,18 @@ END;
 	 */
 	function create_edit_table_link( $box, $display_text = "", $originating_page = "{{FULLPAGENAMEE}}"){
 		if (!is_object($box)) return "";
-		if($display_text == "") $display_text = wfMsg('tableEditEditLink'); 	// default to 'edit table'
+		if($display_text == "") $display_text = wfMessage('tableEditEditLink')->text(); 	// default to 'edit table'
 		$text = "[{{SERVER}}{{SCRIPTPATH}}?title=Special:TableEdit&id=" . $box->box_uid  .
 				"&page=" . $box->page_uid .
 				"&pagename=" . $originating_page . "&type=" . $box->type .
 				"&template=" . str_replace(' ', '_', $box->template) .
 				" " . $display_text . "]";
-		$text = '<span class="tableEdit_editLink plainlinks">' . $text . '</span>';
+		$text = '<div class="tableEdit_editLink plainlinks">' . $text . '</div>';
 		return $text;
 	}
 
 	function create_csv_link( $box, $display_text = "", $originating_page = "{{FULLPAGENAMEE}}"){
-		if ($display_text == "") $display_text = wfMsg('tableEditEditCSVLink');
+		if ($display_text == "") $display_text = wfMessage('tableEditEditCSVLink')->text();
 		$text = sprintf(
 			"[{{SERVER}}{{SCRIPTPATH}}?title=Special:TableEdit&id=%s&page=%s&pagename=%s&type=%s&template=%s&view=csv %s]",
 			$box->box_uid,								// id
@@ -1083,7 +1142,7 @@ END;
 		$table = '';
 		if ( !$for_export ) {
 			$delimiter = "<!--box uid=$box->box_uid-->";
-			$warning = wfMsg('pleaseDontEditHere');
+			$warning = wfMessage('pleaseDontEditHere')->text();
 			$editlink = $this->create_edit_table_link($box) ;
 			$editlink = "\n|- class=\"tableEdit_footer\" \n|$editlink";
 			if ($box->type ==1){
@@ -1124,7 +1183,7 @@ END;
 	# saves box to page, or deletes it from the page
 	function save_to_page($title, $box, $action = ''){
 		#echo 'save to page';
-		global $wgScript, $wgUser, $wgCommandLineMode, $wgReadOnly;
+		global $wgScript, $wgUser, $wgCommandLineMode, $wgReadOnly, $wgOut;
 		
 		if ( $wgReadOnly  ) {
 			return false;
@@ -1136,7 +1195,7 @@ END;
 				if ($box->user_owned() && !$wgUser->isAllowed('delete')) throw new Exception('not allowed');
 				$box->delete_box_from_db();
 				$replacement = '';
-				$act_msg = wfMsg('tableDeleted');
+				$act_msg = wfMessage('tableDeleted')->text();
 			} else {
 				// update the places where this data is mirrored
 				if (isset($box->skip_saving_relations) && !$box->skip_saving_relations) {
@@ -1194,7 +1253,7 @@ END;
 					}
 				}
 				$replacement = $this->make_wikibox($box);
-				$act_msg = wfMsg('tableEdited');
+				$act_msg = wfMessage('tableEdited')->text();
 			}
 			$this->get_old_table($title, $box);
 			$new_page = str_replace($this->old_table, $replacement, $this->old_page_text);
@@ -1203,7 +1262,7 @@ END;
 				# check again that the page doesn't already exist (just in case)
 				# hook to edit the new page before saving. For things like category tags.
 				wfRunHooks( 'TableEditBeforeArticleSave', array( &$new_page ) );
-				$article->doEdit( $new_page, wfMsg('saveMsg',$act_msg, $wgUser->getName()), EDIT_UPDATE );
+				$article->doEdit( $new_page, wfMessage('saveMsg',$act_msg, $wgUser->getName())->text(), EDIT_UPDATE );
 			}
 		} # end if $wgUser->isAllowed
 		if (isset($this->box_req['box_id'])) unset($_SESSION[$this->sesskey]);
@@ -1211,7 +1270,7 @@ END;
 		$_SESSION[$this->sesskey] = '';
 		# Redirect to the changed page
 		$article = new Article($title);
-		$article->doRedirect();
+		$wgOut->redirect($title->getFullURL());
 		return true;
 	}
 
@@ -1225,7 +1284,7 @@ END;
 			throw new Exception("Nonmatching relation for row_id {$current_row->row_id}, rel_id {$relation->rel_id}.");
 		}
 		// grab the box_id of the box to update.
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select(
 			'ext_TableEdit_row',
 			'box_id',
@@ -1352,8 +1411,8 @@ END;
 	 * @param ojbect $box ?? is this even used ??
 	 */
 	function get_old_table($title,$box){
-		$old_page = Revision::newFromTitle($title);
-		$this->old_page_text = $old_page->getText();
+		$old_page = WikiPage::factory($title);
+		$this->old_page_text = $old_page->getText(); 
 		$delimiter = str_replace('.','\.', $this->old_delimiter);	# . escaped in regex
 		$delimiter = str_replace('<!--','<\!--', $delimiter);		# ! escaped in regex
 		$pattern = "!$delimiter(.*)$delimiter!isU";
@@ -1368,7 +1427,7 @@ END;
 	 * Deal with cases where there are two copies of a table with the same box_uid on the same page
 	 */
 	function fix_duplicate_tables(){
-		global $wgUser;
+		global $wgUser, $wgOut;
 		$box = new wikiBox;
 		$box->box_uid = $this->box_req['box_id'];
 		if (!$box->set_from_DB()) throw new Exception('setfromDBfailed');
@@ -1383,8 +1442,8 @@ END;
 		}
 	#	$this->print_obj($this->titleObj);
 		$article = new Article($this->titleObj);
-		$article->doEdit( $new_page, wfMsg('saveMsg','fix duplicate tables', $wgUser->getName()), EDIT_UPDATE );
-		$article->doRedirect();
+		$article->doEdit( $new_page, wfMessage('saveMsg','fix duplicate tables', $wgUser->getName())->text(), EDIT_UPDATE );
+		$wgOut->redirect($this->titleObj->getFullURL());
 		return true;
 	}
 
@@ -1479,7 +1538,7 @@ END;
 	static function newBox( $pagename, $ns = NS_MAIN, $template = "" ) {
 		$box = new wikiBox();
 		$box->setPageName( $pagename );
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->selectRow(
 			"page",
 			array( "page_id" ),
@@ -1654,7 +1713,7 @@ Needs method documentation
 	}
 
     public static function processAuthorshipHistory( $row_id ) {
-        $dbr =& wfGetDB( DB_SLAVE );
+        $dbr = wfGetDB( DB_SLAVE );
         $result = $dbr->select(
             'ext_TableEdit_row_metadata',
             array('row_metadata', 'timestamp'),

@@ -13,7 +13,7 @@ $wgExtensionCredits['other'][] = array(
 # Register hooks ('TableEditApplyColumnRules' hook is provided by the TableEdit extension).
 $wgHooks['TableEditApplyColumnRules'][] = 'efTableEditGOnrColumn';
 
-function efTableEditGOnrColumn( $te, $rule_fields, $box, $row_data, $i, $type ){
+function efTableEditGOnrColumn( $te, $rule_fields, $box, $row_id, $row_data, $i, $type ){
 	global $wgParser, $wgTitle, $wgUser;
 	if (!in_array($rule_fields[0], array( 'go_nr')) ) return true;
 
@@ -50,7 +50,7 @@ class ecTableEditGOnr{
 	function content(){
 
 		return "<GO_nr />";
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		# get the box_uid from inside the tags
 		$page_name = $this->box->page_name;
 		$tmp = explode(':',$page_name);

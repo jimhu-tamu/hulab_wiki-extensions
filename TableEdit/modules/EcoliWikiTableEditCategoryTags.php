@@ -44,7 +44,8 @@ class EcoliWikiTableEditCategoryTags extends TableEditCategoryTags{
 				break;
 			case "MoleculesPerCellTable":
 				foreach ($box->rows as $row){
-					$field = self::get_fields_from_row($row);
+					#$field = self::get_fields_from_row($row);
+					$field = explode('||', $row->row_data);
 					if($field[0] != '' && preg_match("/\d/", $field[2]) &&  $field[3] != ''){
 						$tagarr[] = "[[Category:".$field[0]." expression level data]]";
 						$tagarr[] = "[[Category:Expression level data]]";

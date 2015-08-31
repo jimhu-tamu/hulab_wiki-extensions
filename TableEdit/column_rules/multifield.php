@@ -1,8 +1,9 @@
 <?php
 class ecTableEdit_multifield extends TableEdit_Column_rule{
 
-	function __construct($te, $box, $rule_fields, $row_data, $col_index){
-		parent::__construct($te, $box, $rule_fields, $row_data, $col_index);
+	function __construct($te, $box, $rule_fields, $row_id, $row_data, $col_index){
+		#trigger_error("col_index = $col_index");
+		parent::__construct($te, $box, $rule_fields, $row_id, $row_data, $col_index);
         $this->keys = array_slice($this->rule_fields, 1);
 	}
 

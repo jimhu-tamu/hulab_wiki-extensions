@@ -28,12 +28,13 @@ abstract class TableEdit_Column_rule{
 		$col_index){
 
 	*/
-	function __construct($te, $box, $rule_fields, $row_data, $col_index){
+	function __construct($te, $box, $rule_fields, $row_id, $row_data, $col_index){
 
 		$this->error = "";
 		$this->te = $te; 						// obj
 		$this->box = $box;						// obj
 		$this->rule_fields = $rule_fields;		// array
+		$this->row_id = $row_id;		// array
 		$this->row_data = $row_data;			// array
 		$this->col_data = $row_data[$col_index];			// string
 		$this->col_index = $col_index; 			// need this to make a form, int

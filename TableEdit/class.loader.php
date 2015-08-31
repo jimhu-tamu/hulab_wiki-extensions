@@ -39,7 +39,7 @@ class TableEdit_Loader {
 		
 		// determine database schema type.
 		if(class_exists('wikiBox')){
-			$dbr =& wfGetDB( DB_SLAVE );
+			$dbr = wfGetDB( DB_SLAVE );
 			if(!isset($wgTableEditDatabase)) {
 				if($dbr->tableExists('ext_TableEdit_box')) {
 					$this->schema_type = 'internal';
@@ -131,7 +131,7 @@ class TableEdit_Loader {
 		given what page it's on and what template it's using.
 	*/
 	function getBoxUid($page_name, $template='', $namespace = 0, $use_page_name = false){
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$conditions = array();
 		if($use_page_name === false){
 			$conditions['page_uid'] = $this->getPageId($page_name, $namespace);
@@ -509,7 +509,7 @@ class TableEdit_Loader {
 	}
 	
 	function matchMetadata ($row_obj, $metadata){
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$cond = array('row_metadata'=>mysql_real_escape_string($metadata), 'row_id'=>$row_obj->row_id);
 		$result = $dbr->select($this->box_table, array('*'), $conds, __METHOD__);
 		if ($result){
@@ -519,7 +519,7 @@ class TableEdit_Loader {
 	}
 	
 	function insertRowMetadata($row_obj, $metadata){
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		if ($metadata == '' || !isset($row_obj->row_id) || $this->matchMetadata($row_obj, $metadata))  return; # it's already there
 		$result = $dbr->insert($this->box_table, array('row_id'=>$row_obj->row_id, 'metadata'=>$metadata), __METHOD__);
 		$ret = ($result) ? true : false;
@@ -544,7 +544,7 @@ class TableEdit_Loader {
 	
 	// returns an array of box_uids (with a valid page_uid) that use specific table template
 	function getTables($page_title, $template){
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$conds = array('page_name'=> $page_title);
 		$conds[] = 'page_uid != 0';
 		if ($template != '') $conditions['template'] = $template;

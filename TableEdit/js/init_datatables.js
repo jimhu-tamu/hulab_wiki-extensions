@@ -1,14 +1,14 @@
 /*
  * File: init_datatables.js
- * Version: 0.0.4
- * Author: Daniel Renfro
+ * Version: 0.0.5
+ * Author: Daniel Renfro and Jim Hu
  * Info: ecoliwiki.net
  *
- * Copyright 2009-2010 Daniel Renfro, all rights reserved.
+ * Copyright 2009-2015 Daniel Renfro and Jim Hu, all rights reserved.
+ * modified for datatables 1.10 in August 2015
  */ 
  
  /* global $ */
- 
 // define some variables
 var view = 'tableEdit_view';
 var GO_table;
@@ -31,14 +31,15 @@ var color_IEAs = function( nRow, aData, iDisplayIndex ) {
 // move the edit link into the table footer thing & remove the tfoot
 var move_edit_link = function( table ) {
 	var e = $(table).find(".tableEdit_editLink");
-	e.attr('class', 'plainlinks').css('padding-left','20px');
-	e.prependTo( $(table).closest('.dataTables_wrapper').find(".bottom") );
+	e.attr('class', 'plainlinks').css({'clear':'both'});
+	e.appendTo( $(table).closest('.dataTables_wrapper').find(".bottom") );
 	
 	$(table).find('tfoot').remove();
 }
 
 // set the base options for all tables
 var base_options = {
+	'bRetrieve':true,
 	'bFilter': false,
 	'bInfo': false,
 	'bSort': true,
@@ -190,6 +191,7 @@ $(document).ready( function() {
 			});
 			*/
 			
+			
 			move_edit_link( table );
 			
 		} 
@@ -219,6 +221,31 @@ $(document).ready( function() {
 				}
 			);	
 			var dT = $(table).dataTable( table_options );
+			move_edit_link( table );
+	}
+
+		/* --------------- OMP annotation table ---------------------------------------- */		
+		else if ( $(table).hasClass('OMP_annotation_table')
+                ) {
+			var table_options = $.extend(
+				{},					// empty obj to fill
+				base_options,		// start with this
+				{
+					'bAutoWidth': false,
+					'bFilter': true,
+					'bInfo': true,
+					'bProcessing': false,
+					'bSort': true,
+					'dom': '<"top"irf>t<"bottom"ip><"clear">',
+					'bPaginate': true,
+					'bLengthChange': false,				// requires bPaginate
+					'oLanguage': {
+						'sSearch': 'Search all columns: ',
+					},
+				}
+			);	
+			var dT = $(table).dataTable( table_options );
+			move_edit_link( table );
 		}
 
 		/* --------------- Alleles & Phenotypes table ---------------------------------------- */		
@@ -241,16 +268,17 @@ $(document).ready( function() {
 				}
 			);	
 			var dT = $(table).dataTable( table_options );
+			move_edit_link( table );
 		}
 		
 		
 		/* --------------- everything else ------------------------------------- */		
 		else {
 		//	$(table).dataTable( base_options );
+
 		}
 		
 		/* --------------- table-agnostic code --------------------------------- */
-		
 	}); 
 	
 	// make sure that all other tables get some sort of sortable behaviour

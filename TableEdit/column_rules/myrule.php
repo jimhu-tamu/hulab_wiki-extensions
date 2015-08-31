@@ -3,8 +3,8 @@
 
 class ecTableEdit_myrule extends TableEdit_Column_rule{
 	
-	function __construct($te, $box, $rule_fields, $row_data, $col_index){
-		parent::__construct($te, $box, $rule_fields, $row_data, $col_index);
+	function __construct($te, $box, $rule_fields, $row_id, $row_data, $col_index){
+		parent::__construct($te, $box, $rule_fields, $row_id, $row_data, $col_index);
 	}
 
 	
@@ -21,7 +21,7 @@ class ecTableEdit_myrule extends TableEdit_Column_rule{
 	}
 
 	
-	function show_mydata(){
+	function show_data(){
 		$tmp = str_replace("\n*","\n",trim($this->col_data));
 		$tmp = preg_replace("/^\*/","",$tmp);
 		$value = explode("\n",$tmp);

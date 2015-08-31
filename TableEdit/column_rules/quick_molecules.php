@@ -31,7 +31,7 @@ $wgAutoloadClasses['TableEdit_Column_rule'] = $dir . 'class.column_rule.php';
 $wgHooks['TableEditApplyColumnRules'][] = 'efTableEdit_quickmolecules';
 
 
-function efTableEdit_quickmolecules( $te, $rule_fields, $box, $row_data, $i, $type ){
+function efTableEdit_quickmolecules( $te, $rule_fields, $box, $row_id, $row_data, $i, $type ){
 	global $wgParser, $wgTitle, $wgUser;
 	if (!in_array($rule_fields[0], array( 'quickmolecule')) ) return true;
 
@@ -110,7 +110,7 @@ class ecTableEdit_quickmolecule extends TableEdit_Column_rule {
 	}
 
 	public function protein() {
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select(
 			'ext_TableEdit_box',
 			'box_uid',
@@ -137,7 +137,7 @@ class ecTableEdit_quickmolecule extends TableEdit_Column_rule {
 	}
 
 	public function dna() {
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select(
 			'ext_TableEdit_box',
 			'box_uid',

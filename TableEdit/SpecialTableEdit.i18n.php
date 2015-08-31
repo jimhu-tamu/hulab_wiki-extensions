@@ -53,6 +53,7 @@ $messages['en'] = array(
 							."<p>See <a href = '{{SCRIPTPATH}}/index.php/Help:Help'>Help</a> for Help on this wiki.  See <a href = '{{SCRIPTPATH}}/index.php/Special:TableEdit'>the documentation</a> for how to use the table editor",
 	'is_not_number'   	=> 'is not a number',
 	'load'          	=> 'Load file',
+	'move-row'       	=> 'Move Row',
 	'newHeading'    	=> 'New Heading',
 	'newTableHere ' 	=> 'Create Table Here',
 	'notFound'       	=> 'not found',

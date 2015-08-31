@@ -20,7 +20,7 @@ class Quicklinks extends MediaWikiTestCase {
 	 * @depends testSequencePropertyExists
 	 */
 	public function testValidProteinSequenceData() {
-	    $dbr = & wfGetDB( DB_SLAVE );
+	    $dbr =  wfGetDB( DB_SLAVE );
 	    $quicklinks = $this->quicklinks;
 	    $result = $quicklinks->_sql_box_row_data($dbr,
 		"page_name like '%:Gene_Product(s)'");

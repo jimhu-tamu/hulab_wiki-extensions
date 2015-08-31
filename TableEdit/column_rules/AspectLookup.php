@@ -12,7 +12,7 @@ $wgExtensionCredits['other'][] = array(
 # Register hooks ('TableEditApplyColumnRules' hook is provided by the TableEdit extension).
 $wgHooks['TableEditApplyColumnRules'][] = 'efTableEditAspectLookup';
 
-function efTableEditAspectLookup( $te, $rule_fields, $box, $row_data, $i, $type ){
+function efTableEditAspectLookup( $te, $rule_fields, $box, $row_id, $row_data, $i, $type ){
 	global $wgParser, $wgTitle, $wgUser;
 
 	// skip if this isn't the right column rule
@@ -34,7 +34,7 @@ function efTableEditAspectLookup( $te, $rule_fields, $box, $row_data, $i, $type 
 	if ( isset ($row_data[$go_id_rIndex]) && trim($row_data[$go_id_rIndex]) != "" ) {
 
 		// get a database handle
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 
 		// execute some SQL and return an object of the row
 		$row = $dbr->selectRow(

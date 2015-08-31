@@ -11,7 +11,7 @@ $wgExtensionCredits['other'][] = array(
 # Register hooks ('TableEditApplyColumnRules' hook is provided by the TableEdit extension).
 $wgHooks['TableEditApplyColumnRules'][] = 'efTableEditProteinPropertiesColumn';
 
-function efTableEditProteinPropertiesColumn( $te, $rule_fields, $box, $row_data, $i, $type ){
+function efTableEditProteinPropertiesColumn( $te, $rule_fields, $box, $row_id, $row_data, $i, $type ){
 	if (!in_array($rule_fields[0], array( 'prot_length','prot_mw','prot_pi','prot_extcoeff')) ) return true;
 	$type = 'protprop'; #echo "</pre>";
 
@@ -50,7 +50,7 @@ function efTableEditProteinPropertiesColumn( $te, $rule_fields, $box, $row_data,
 	$aa_count = array_count_values($aa);
 	# initialize, using $aa_mass keys for aa names
 	foreach ($aa_mass as $aa_name => $mass){
-		$aa_count[$aa_name] = 0;
+		if(!isset($aa_count[$aa_name])) $aa_count[$aa_name] = 0;
 	}
 	switch ($rule_fields[0]){
 		case 'prot_length':
@@ -59,9 +59,9 @@ function efTableEditProteinPropertiesColumn( $te, $rule_fields, $box, $row_data,
 		case 'prot_mw':
 			# avg masses from http://www.ionsource.com/Card/aatable/aatable.htm
 			$mw = 17; # H20 for N and C term
-			#print_r($aa_mass);
+			#print_r($aa_count);
 			foreach ($aa_count as $res => $num){	
-				#echo "$res $num ".$aa_mass["$res"]."\n";
+				#echo "$res $num ".$aa_mass["$res"]."<br>\n";
 				$mw = $mw + $num * $aa_mass[$res];
 			}
 			if ($mw > 1000) $row_data[$i] = round($mw/1000, 3)." kDa";

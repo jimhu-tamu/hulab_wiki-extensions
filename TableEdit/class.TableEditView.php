@@ -88,9 +88,9 @@ END;
 			Xml::openElement( 'textarea', array( 'name' => "bulk_add_form", 'cols' => 80, 'rows' => 10 )).
 			''.
 			Xml::closeElement( 'textarea' ).
-			self::form_button(wfMsg('save'))
+			self::form_button(wfMessage('save')->text())
 		);
-		$string .= "<br /><br /><a href='$te->url'>".wfMsg('cancel')."</a>\n\n";
+		$string .= "<br /><br /><a href='$te->url'>".wfMessage('cancel')->text()."</a>\n\n";
 		return $string;
 	}
 
@@ -119,28 +119,28 @@ END;
 		$string = '';
 
 		# top message telling the user that a conflict has been detected
-		if ($te->conflict != '') $string .= "<span style='color:red'>".wfMsg('conflict',$te->conflict)."</span><br/>";
+		if ($te->conflict != '') $string .= "<span style='color:red'>".wfMessage('conflict',$te->conflict)->text()."</span><br/>";
 
 		# box for table from wiki or db
 		if ($box->template != '') $box2->template = $box->template; # restore template control for things like menus and calcs
-		$string .= '<h3>'.wfMsg('savedVersion').'</h3>';
+		$string .= '<h3>'.wfMessage('savedVersion')->text().'</h3>';
 		$string .= self::box2html($te, $box2,'',$edit_form2,false,2)."";
-		$string .= '<p>'.wfMsg('conflictExplain')."</p>";
-		$string .= '<p>'.wfMsg('conflictHelp')."</p><br/>";
-	#	$string .= self::form_button_only($ te, wfMsg('editBox2',te->conflict), array('view' => 'nav'))."<br />";
+		$string .= '<p>'.wfMessage('conflictExplain')->text()."</p>";
+		$string .= '<p>'.wfMessage('conflictHelp')->text()."</p><br/>";
+	#	$string .= self::form_button_only($ te, wfMessage('editBox2',te->conflict)->text(), array('view' => 'nav'))."<br />";
 
 		# box for working (session) version (either loaded from the db or right before save)
-		$string	.= '<h3>'.wfMsg('workingVers_'.$te->conflict).'</h3>'.wfMsg('conflictExplain2').self::box2html($te, $box,'',$edit_form)."";
+		$string	.= '<h3>'.wfMessage('workingVers_'.$te->conflict)->text().'</h3>'.wfMessage('conflictExplain2')->text().self::box2html($te, $box,'',$edit_form)."";
 		# button at bottom
-		$buttons = "<table class=\"tableEdit_conflict\"><tr><td>".self::form_button_only($te, wfMsg('editBox','working'), array('view' => 'nav' ))."<td>\n";
+		$buttons = "<table class=\"tableEdit_conflict\"><tr><td>".self::form_button_only($te, wfMessage('editBox','working')->text(), array('view' => 'nav' ))."<td>\n";
 		switch($te->conflict){
 			case 'wiki':
 				break;
 			case 'db';
-				$buttons .= "<td>".self::form_button_only($te, wfMsg('saveToPage', urldecode($te->page_name) ), array('view' => 'force_save'))."</td>";
+				$buttons .= "<td>".self::form_button_only($te, wfMessage('saveToPage', urldecode($te->page_name) )->text(), array('view' => 'force_save'))."</td>";
 				break;
 		}
-		$string .= $buttons."<td><a href='$wgServer$wgScriptPath/index.php?title=$box->page_name'>".wfMsg('cancel')."</a></td></tr></table>\n\n";
+		$string .= $buttons."<td><a href='$wgServer$wgScriptPath/index.php?title=$box->page_name'>".wfMessage('cancel')->text()."</a></td></tr></table>\n\n";
 		return $string;
 	}
 
@@ -167,10 +167,10 @@ END;
 		# build the lower part of the table, which is the form without the row of < and > buttons
 		$table = "<tr $box->heading_style>$table_headings</tr><tr>$head_row</tr>";
 		#if ($this->style == '') $style = addslashes($box->heading_style);
-		$table .= "<tr><td colspan = '$i'>".wfMsg('style').
+		$table .= "<tr><td colspan = '$i'>".wfMessage('style')->text().
 			 XML::input('style', 40, $box->heading_style, array('maxlength'=>255) )
-			.self::form_button(wfMsg('update')).'<br/>'
-			.wfMsg('headingStyleExample')."</td></tr>";
+			.self::form_button(wfMessage('update')->text()).'<br/>'
+			.wfMessage('headingStyleExample')->text()."</td></tr>";
 		$table .= "<tr><td colspan = '$i'>
 		    <table class=\"tableEdit_edit_head\">
 		      <tr>
@@ -243,38 +243,37 @@ END;
 				<option label='Public' value='0' selected>Public</option>
 				<option label='Private' value='$wgUser->mId' >Private</option></select>";
 		}
+		$table .= "<tr><td colspan = '2'>".$select_owner;
+
+		/*
+		 * Yes, the dreaded "update" button. We've gone back and forth on this
+		 * one and I think finally decided that the text "update" is misleading
+		 * and should be "refresh." See SpecialTableEdit.i18n.php for the actual
+		 * text that this button shows.
+		 *
+		 * DPR 2011-06-06
+		 */
+		$table .= self::form_button(wfMessage('update')->text()).' ';
+
+
+		/*
+		 * The save button on the edit-row form should be more explicit about
+		 * saving back to the table and not saving the table itself.
+		 */
+		$table .= self::form_button(wfMsg('save-row')).' '
+			." <a href='".$te->url."&view=nav&act=restorerow&row_index=".$row->row_index."'>".wfMsg('cancel')."</a>"
+			."</td></tr></table><br/>\n";
+		if ($select_owner !='') $table.= wfMsg('explainOwnerRules').'<br/><br/>';
 		if ( !$skip_style ) {
-
-			$table .= "<tr><td colspan = '2'>".$select_owner;
-
-            /*
-             * Yes, the dreaded "update" button. We've gone back and forth on this
-             * one and I think finally decided that the text "update" is misleading
-             * and should be "refresh." See SpecialTableEdit.i18n.php for the actual
-             * text that this button shows.
-             *
-             * DPR 2011-06-06
-             */
-			$table .= self::form_button(wfMsg('update')).' ';
-
-
-            /*
-             * The save button on the edit-row form should be more explicit about
-             * saving back to the table and not saving the table itself.
-             */
-			$table .= self::form_button(wfMsg('save-row')).' '
-				." <a href='".$te->url."&view=nav&act=restorerow&row_index=".$row->row_index."'>".wfMsg('cancel')."</a>"
-				."</td></tr></table><br/>\n";
-			if ($select_owner !='') $table.= wfMsg('explainOwnerRules').'<br/><br/>';
-
-			$table .= "<tr><td colspan = '$i'> ".wfMsg('editRowStyle').
-				XML::input('row_style', 40, $row->row_style, array('maxlength'=>255) )."<br/>"
-				.wfMsg('rowStyleExample')."</td></tr>";
-			$table = implode (' ',$te->msg).self::form($te, $table);
+			$table .= wfMsg('editRowStyle').
+			XML::input('row_style', 40, $row->row_style, array('maxlength'=>255) )."<br/>"
+			.wfMsg('rowStyleExample');
 		}
-		else {
-			$table .= '</td></tr></table>';
-		}
+		$table = implode (' ',$te->msg).self::form($te, $table);
+		#$table .= '</td></tr></table>';
+		
+		
+		#$table. = self::form($te, $move_row_form);
 
 		$table .= self::text2html($box->help4);
 		return $table;
@@ -426,7 +425,7 @@ END;
 
 	# this is the base view showing the table as it will appear on the page
 	# but with edit buttons
-	function nav_view(TableEdit $te, WikiBox $box ){
+	static function nav_view(TableEdit $te, WikiBox $box ){
 		global $wgUser,$wgServer,$wgScriptPath;
 		if(!is_object($box)) return "";
 		// show an edit headings button if there is no template
@@ -452,15 +451,18 @@ END;
 
 
 		// add bottom buttons
-		$addtype = 'row';
-		if ($box->type == 1) $addtype = 'column';
-		$string .= '<table class=\"tableEdit_nav1\">';
-		$string .="<tr><td>".self::form_button_only($te, wfMsg('addData',wfMsg($addtype)))."</td>";
-		$string .="<td>".self::form_button_only($te, wfMsg('addMultiple'))."</td>";
-		/*   save as *.xls   */
-		//$string .= '<td>' . self::form_button_only($te, wfMsg('saveAsXLS')) . '</td>';
-		$string .= '</tr></table><hr />';
-
+		$addBottomButtons = true;
+		wfRunHooks( 'TableEditBeforeAddData', array( $box, &$addBottomButtons ) );
+		if($addBottomButtons || $wgUser->isAllowed('userrights')){
+			$addtype = 'row';
+			if ($box->type == 1) $addtype = 'column';
+			$string .= '<table class=\"tableEdit_nav1\">';
+			$string .="<tr><td>".self::form_button_only($te, wfMsg('addData',wfMsg($addtype)))."</td>";
+			$string .="<td>".self::form_button_only($te, wfMsg('addMultiple'))."</td>";
+			/*   save as *.xls   */
+			//$string .= '<td>' . self::form_button_only($te, wfMsg('saveAsXLS')) . '</td>';
+			$string .= '</tr></table><hr />';
+		}
 		if ( (isset($box->template) && $box->template == "" ) || $wgUser->isAllowed('userrights')) {
 			$string .= "<table class=\"tableEdit_nav2\"><tr>";
 			if ($box->type <= 1 && $box->template == '') $string .= "<td>".self::form_button_only($te, wfMsg('rotate') )."</td>";
@@ -616,6 +618,7 @@ END;
 		$edit 	= self::form_button(wfMsg('edit'  ) );
 		$copy 	= self::form_button(wfMsg('copy'  ) );
 		$delete = self::form_button(wfMsg('delete') );
+		$move = self::form_button(wfMsg('move-row') );
 		switch ($type){
 			case "Copy":
 				$edit = $delete = '';
@@ -626,8 +629,10 @@ END;
 		}
 		$owner_uid = $row->owner_uid;
 		$form = '';
+		wfRunHooks( 'TableEditRowButtons', array( $te->box, $row, &$copy, &$delete, &$move, &$owner_uid ) );
+
 		if($owner_uid == 0 || $owner_uid == $wgUser->getID() || in_array('bureaucrat', $wgUser->getEffectiveGroups())){
-			$form .= self::form($te, "$content $edit $copy $delete");
+			$form .= self::form($te, "$content $edit $copy $delete $move");
 			if($owner_uid == 0)	$form .= " public";
 			return $form;
 		}

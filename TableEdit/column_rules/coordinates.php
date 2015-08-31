@@ -15,7 +15,7 @@ $wgHooks['TableEditApplyColumnRules'][] = new ecTableEditCoordinateColumn;
 class ecTableEditCoordinateColumn {
 
 
-	function onTableEditApplyColumnRules( $te, $rule_fields, $box, $row_data, $i, $type ) {
+	function onTableEditApplyColumnRules( $te, $rule_fields, $box, $row_id, $row_data, $i, $type ) {
 		global $wgRequest, $wgTitle;
 
 		if ($rule_fields[0] != 'coordinates') return true;

@@ -45,8 +45,8 @@ function efTableEditQuickLinksColumn( $te, $rule_fields, $box, $row_data, $i, $t
 */
 class ecTableEdit_quicklinks extends TableEdit_Column_rule{
 
-	function __construct($te, $box, $rule_fields, $row_data, $col_index){
-		parent::__construct($te, $box, $rule_fields, $row_data, $col_index);
+	function __construct($te, $box, $rule_fields, $row_id, $row_data, $col_index){
+		parent::__construct($te, $box, $rule_fields, $row_id, $row_data, $col_index);
 	}
 
 	function make_form_row(){
@@ -65,7 +65,7 @@ class ecTableEdit_quicklinks extends TableEdit_Column_rule{
 	}
 
 	function get_gene_lists(){
-		$dbr = & wfGetDB( DB_SLAVE );
+		$dbr =  wfGetDB( DB_SLAVE );
 		$list = array();
 		$result = $dbr->select(
 			'page',
@@ -105,7 +105,7 @@ class ecTableEdit_quicklinks extends TableEdit_Column_rule{
 			# get genome accessions, start, and end
 			$accession = 'NC_000913';
 			if (is_file("/usr/local/fasta/$organism".".fasta")) $accession = $organism;
-			$dbr = & wfGetDB( DB_SLAVE );
+			$dbr =  wfGetDB( DB_SLAVE );
 			$result = $dbr->select(
 				array('ext_TableEdit_box','ext_TableEdit_row'),
 				'row_data',
@@ -252,7 +252,7 @@ class ecTableEdit_quicklinks extends TableEdit_Column_rule{
 
 
 	public function protein_sequence($page_cluster_name) {
-	    $dbr = & wfGetDB( DB_SLAVE );
+	    $dbr =  wfGetDB( DB_SLAVE );
 	    $result = $this->_sql_box_row_data($dbr,
 		"page_name='$page_cluster_name:Gene_Product(s)'");
 

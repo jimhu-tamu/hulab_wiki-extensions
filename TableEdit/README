@@ -13,6 +13,18 @@ installer needs rewriting.
 
 Changelog
 ----------------
+version 1.1.1
+- replace removed wfUserAgent function
+- remove call by reference for wfGetDB
+- add method wikiBox::get_row_hash
+----------------
+version 1.1
+- save/edit permissions system changes
+----------------
+version 1.0.14
+- changed column rule hook to pass row_id: old column rules must be fixed if they 
+have their own constructors instead of inheriting from class.column_rule.php.
+----------------
 version 1.0.13
 - add datetime column rule (todo: implement js datetime picker)
 - minor bug fixes and comment fixes

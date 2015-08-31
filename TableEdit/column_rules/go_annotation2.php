@@ -12,9 +12,9 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 	private $dbi;
 	private $wcodes = array('IPI','IGI','ISS','ISO','ISA','ISM', 'IEA', 'IGC', 'IC');
 
-	function __construct($te, $box, $rule_fields, $row_data, $col_index){
+	function __construct($te, $box, $rule_fields, $row_id, $row_data, $col_index){
 		global $wgCodePath;
-		parent::__construct($te, $box, $rule_fields, $row_data, $col_index);
+		parent::__construct($te, $box, $rule_fields, $row_id, $row_data, $col_index);
 		# instantiate classes to register the other classes and provide bases for extension.
 		require_once ($wgCodePath.'library/OntologyProject.php');
 		$project = new OntologyProject;
@@ -30,8 +30,13 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 	}
 
 	function make_form_row(){
+	#	echo "<pre>";	print_r($this); echo "</pre>";die;
+
 		$index = $this->col_index;
-		return $this->{$this->col_name}();	
+		if(is_string($this->col_name) && method_exists($this, $this->col_name)){
+			 return $this->{$this->col_name}();	
+		}	 
+		parent::make_form_row();
 	}
 
 	# overload to make the data a list
@@ -74,6 +79,7 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 		if(preg_match('/^(GO:)*\s*(\d{1,7})/', $go_id, $m)){
 			$go_id = 'GO:'.str_pad($m[2],7,'0',STR_PAD_LEFT);
 		}
+		$go_id = str_ireplace('G0:','GO:', $go_id);
 		return $go_id;
 	}
 
@@ -84,6 +90,10 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 	function evidence_code(){
 		$tmp = explode(':', $this->row_hash['evidence']);
 		return $tmp[0];
+	}
+
+	function page(){
+		return TableEditView::form_field($this->col_index, $this->row_hash['page'], 40,'text');
 	}
 				
 	function with(){
@@ -159,7 +169,13 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 	}
 	
 	function status(){
+		global $wgTitle, $wgUser, $wgParser;
 		$msg = $this->calc_status();
+		$msg = $wgParser->parse(
+			$msg,
+			$wgTitle,
+			ParserOptions::newFromUser( $wgUser )
+		)->getText();
 		return $msg.Html::hidden('field[]',$msg);
 	}
 	
@@ -176,8 +192,9 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 			# look this up from term, not row_hash, because the go_term is updating on the same refresh cycle
 			if (trim($this->term->name)  == '') $missing[] = 'Valid GO ID';
 		}
-		if ($this->row_hash['evidence'] == '') $missing[] = 'evidence';
-		else {
+		if ($this->row_hash['evidence'] == ''){ 
+			$missing[] = 'evidence';
+		}else{
 			if (in_array($this->evidence_code(), $this->wcodes)	){
 				if (trim($this->row_hash['with']) == ''){ 
 					$missing[] = 'with/from';
@@ -194,7 +211,8 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 			$msg = "Missing: ".implode(', ',$missing);
 		}else{
 			$msg = "complete";
-		}	
+		}
+		wfRunHooks( 'TableEditGOannotationStatus', array($this->row_id, &$msg) );
 		return $msg;
 	}
 	

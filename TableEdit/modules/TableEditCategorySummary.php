@@ -142,7 +142,7 @@ class TableEditCategorySummary{
 		if(get_class($title) != 'Title') #die(print_r($title,true));
 		$row_arr = array();
 		# find all the relevant tables on the page
-		$dbr =& wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select(
 			array('ext_TableEdit_box'),
 			'*',
