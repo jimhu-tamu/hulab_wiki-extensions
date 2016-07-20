@@ -47,7 +47,7 @@ EOT;
 $wgExtensionCredits['specialpage'][] = array(
 	'name' => 'UserRightsList',
 	'author' => 'Jim Hu',
-	'version'=>'0.53',
+	'version'=>'0.54',
 	'description' => 'list-based user rights management',
 	'url' => 'http://www.mediawiki.org/wiki/Extension:UserRightsList'
 );
