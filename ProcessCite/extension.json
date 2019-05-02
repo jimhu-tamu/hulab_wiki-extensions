@@ -5,6 +5,7 @@
 					"[mailto:jimhu@tamu.edu Jim Hu]"
 				],	
 	"version": "0.3",	
+	"url": "https://github.com/jimhu-tamu/hulab_wiki-extensions/tree/master/ProcessCite",
 	"Hooks": {
 		"CiteBeforeStackEntry": "ProcessCite::processCitation"
 	},
