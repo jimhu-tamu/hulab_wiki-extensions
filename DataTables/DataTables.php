@@ -34,6 +34,9 @@ $wgExtensionCredits['other'][] = array(
 
 // ============ hooks =================================
 $wgHooks['ResourceLoaderRegisterModules'][] = array( new DataTables, 'register' );
+#$wgHooks['ResourceLoaderRegisterModules'][] =  "DataTables::register";
+
+#$wgHooks['BeforePageDisplay'][] = 'Datatables::init';
 
 
 // ============ Global Functions ============================================
@@ -46,10 +49,12 @@ class DataTables {
 	
 		'ext.datatables' => array(
 			'scripts' => array(
-				'DataTables-1.10.8/media/js/jquery.dataTables.js'
+			#	'DataTables-1.10.8/media/js/jquery.dataTables.js'
+				'DataTables/DataTables-1.10.13/js/jquery.dataTables.js'
 				),
 			'styles' => array(
-			    'DataTables-1.10.8/media/css/jquery.dataTables.css'
+			#    'DataTables-1.10.8/media/css/jquery.dataTables.css'
+			    'DataTables/DataTables-1.10.13/css/jquery.dataTables.css'
 			   // 'media/css/demo_table_jui.css'
 				),
 			'messages' => array()
@@ -140,7 +145,7 @@ class DataTables {
 				'DataTables-1.10.8/extensions/Scroller/js/datatables.scroller.js'
 			),
 			'styles' => array(
-				'DataTables-1.10.8/extensions/Scroller/css/scroller.datatables.js'
+				'DataTables-1.10.8/extensions/Scroller/css/scroller.dataTables.css'
 			),
 			'messages' => array()		
 		),
@@ -180,18 +185,31 @@ class DataTables {
 		)
 	);
 
+	public static function init(OutputPage $out, Skin $skin){
+		global $wgExtensionAssetsPath;
+		foreach ( self::$modules as $name => $resources ) {
+			$out->addModules($name);
+		}
+		global $wgResourceModules;
+		#trigger_error(print_r($wgResourceModules, true));
+		return true;
+	}
 
 
 	public static function register( $resourceLoader ) {
-		global $wgExtensionAssetsPath;
-		
+		global $wgExtensionAssetsPath, $wgResourceModules;
 		$localpath = dirname( __FILE__ );
 		$remotepath = "$wgExtensionAssetsPath/DataTables";
-		
 		foreach ( self::$modules as $name => $resources ) {
-			$resourceLoader->register( 
-				$name, new ResourceLoaderFileModule( $resources, $localpath, $remotepath )
-			);
+			#if (!$resourceLoader->isModuleRegistered($name) ){
+			#	$resourceLoader->register( 
+			#		$name, new ResourceLoaderFileModule( $resources, $localpath, $remotepath )
+			#		);
+			$resources['localBasePath'] = __DIR__;
+			$resources['remoteExtPath'] = 'DataTables';
+ 			$wgResourceModules[$name] =	$resources;
+			#}
+		#	trigger_error(__METHOD__." $name ".print_r($wgResourceModules[$name],true));
 		}
 		
 		return true;

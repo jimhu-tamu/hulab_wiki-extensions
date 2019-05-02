@@ -1,0 +1,79 @@
+{
+	"name": "DataTables",
+	"description": "Datatables jQuery library for MediaWiki",
+	"author":[
+				"[mailto:bluecurio@gmail.com Daniel Renfro] (Original Mediawiki Extension)",
+				"[mailto:jimhu@tamu.edu Jim Hu] (since 0.2)",
+				"Allan Jardine (Javascript library)"
+			],
+	"version": "0.4",	
+	"manifest_version": 1,
+	"Hooks": {
+		"BeforePageDisplay": [
+			"DataTables::init"
+		]
+	},
+	"AutoloadClasses": {
+		"DataTables": "DataTables.php"
+	},
+	"ResourceModules": {
+			"ext.datatables": {
+				"scripts":"DataTables-1.10.16/DataTables-1.10.16/js/jquery.dataTables.js",
+				"styles" :"DataTables-1.10.16/DataTables-1.10.16/css/jquery.dataTables.css"
+			},
+			"ext.datatables.autofill":{
+				"scripts":"DataTables-1.10.16/AutoFill-2.2.2/js/dataTables.autoFill.js",
+				"styles" :"DataTables-1.10.16/AutoFill-2.2.2/css/autoFill.dataTables.css",
+				"dependencies":"ext.datatables"
+			},
+			"ext.datatables.buttons":{
+				"scripts":"DataTables-1.10.16/Buttons-1.4.2/js/dataTables.buttons.js",
+				"styles" :"DataTables-1.10.16/Buttons-1.4.2/css/buttons.dataTables.css",
+				"dependencies":"ext.datatables"
+			},
+			"ext.datatables.colreorder":{
+				"scripts" :"DataTables-1.10.16/ColReorder-1.4.1/js/dataTables.colReorder.js",
+				"styles" :"DataTables-1.10.16/ColReorder-1.4.1/css/colReorder.dataTables.css",
+				"dependencies":"ext.datatables"
+			},	
+			"ext.datatables.fixedcolumns":{
+				"scripts":"DataTables-1.10.16/FixedColumns-3.2.3/js/dataTables.fixedColumns.js",
+				"styles" :"DataTables-1.10.16/FixedColumns-3.2.3/css/fixedColumns.dataTables.css",
+				"dependencies":"ext.datatables"
+			},
+			"ext.datatables.fixedheader":{
+				"scripts" :"DataTables-1.10.16/FixedHeader-3.1.3/js/dataTables.fixedHeader.js",
+				"styles" :"DataTables-1.10.16/FixedHeader-3.1.3/css/fixedHeader.dataTables.css",
+				"dependencies":"ext.datatables"
+			},
+			"ext.datatables.keytable" :{
+				"scripts" :"DataTables-1.10.16/KeyTable-2.3.2/js/dataTables.keyTable.js",
+				"styles" :"DataTables-1.10.16/KeyTable-2.3.2/css/keyTable.dataTables.css",
+				"dependencies":"ext.datatables"
+			},
+			"ext.datatables.responsive" : {
+				"scripts" :"DataTables-1.10.16/Responsive-2.2.0/js/dataTables.responsive.js",
+				"styles" :"DataTables-1.10.16/Responsive-2.2.0/css/responsive.dataTables.css",
+				"dependencies":"ext.datatables"
+			},
+			"ext.datatables.rowreorder" : {
+				"scripts" :"DataTables-1.10.16/RowReorder-1.2.3/js/dataTables.rowReorder.js",
+				"styles" :"DataTables-1.10.16/RowReorder-1.2.3/css/rowReorder.dataTables.css"
+			},
+			"ext.datatables.scroller" : {
+				"scripts" :"DataTables-1.10.16/Scroller-1.4.3/js/dataTables.scroller.js",
+				"styles" :"DataTables-1.10.16/Scroller-1.4.3/css/scroller.dataTables.css",
+				"dependencies":"ext.datatables"
+			},
+
+			"ext.datatables.select" : {
+				"scripts" :"DataTables-1.10.16/Select-1.2.3/js/dataTables.select.js",
+				"styles" :"DataTables-1.10.16/Select-1.2.3/css/select.dataTables.css",
+				"dependencies":"ext.datatables"
+			} 
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "DataTables"
+	}
+}
