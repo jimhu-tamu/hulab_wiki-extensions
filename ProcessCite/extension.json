@@ -1,0 +1,20 @@
+{
+	"name": "ProcessCite",
+	"description": "Modifies Cite citations based on customizable content.",
+	"author":	[
+					"[mailto:jimhu@tamu.edu Jim Hu]"
+				],	
+	"version": "0.3",	
+	"Hooks": {
+		"CiteBeforeStackEntry": "ProcessCite::processCitation"
+	},
+	"AutoloadClasses": {
+		"ProcessCite": "ProcessCite.php"
+	},
+	"MessagesDirs": {
+		"ProcessCite": [
+			"i18n"
+		]
+	},
+	"manifest_version": 1
+}
