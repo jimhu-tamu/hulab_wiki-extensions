@@ -40,8 +40,17 @@ class PMIDeFetch{
 	}
 	
 	function get_from_eutils($pmid){
-		$url = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi".
+		global $egNCBIeUtilsAPIkey;
+		$delay = 400000; # 0.4 seconds in microseconds
+		$url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi".
 		"?db=pubmed&id=$pmid&retmode=xml&email=ecoliwiki@gmail.com&tool=EcoliWiki_PMID_tools";
+		
+		# adjust if API key is set
+		if(isset($egNCBIeUtilsAPIkey) && $egNCBIeUtilsAPIkey !=''){
+			$url .= "&api_key=$egNCBIeUtilsAPIkey";
+			$delay = 100000; #0.1 seconds in microseconds
+		}
+		usleep($delay);
 		# need to handle failed connection
 		#echo "trying EUtils...\n";
 		$pmidXML = file_get_contents( $url );
