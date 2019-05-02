@@ -22,21 +22,23 @@ $wgExtensionCredits['other'][] = array(
 
 
 # Register hooks ('PagesOnDemand' hook is provided by the PagesOnDemand extension).
-$wgHooks['ParserAfterStrip'][] = 'efTableEditLinks';
+$wgHooks['ParserBeforeStrip'][] = 'GONUTSlinkerFactory::efTableEditLinks';
 $wgHooks['TableEditCheckConflict'][] = 'efTableEditGONUTSStripLinks';
 
 /**
 * Loads a demo page if the title matches a particular pattern.
 * @param Title title The Title to check or create.
 */
-function efTableEditLinks( &$parser, &$text, &$strip_state ){
-	$l = new TableEditGONUTSLinker($text);
-	$text = $l->execute();
-	return true;
+class GONUTSlinkerFactory{
+	public static function efTableEditLinks( &$parser, &$text, &$strip_state ){
+		$l = new TableEditGONUTSLinker($text);
+		$text = $l->execute();
+		return true;
+	}
 }
 
 class TableEditGONUTSLinker extends TableEditLinker{
-	
+
 	function generic_links($table){
 		$table = self::pmid_links($table);
 		$table = self::gonuts_links($table);
@@ -67,14 +69,15 @@ class TableEditGONUTSLinker extends TableEditLinker{
 	static function gonuts_links($table){
 		$stripped_table = preg_replace('/\[.*\]/','', $table);
 		# Do links to GONUTS
-		$pattern = "/GO:\d+/";
+		$pattern = "/GO:\d{7}/";
 		preg_match_all($pattern, $stripped_table, $matches);
 		foreach (array_unique($matches[0]) as $match){
 			try{					
 				$page = $match."_!_".str_replace(" ","_", Annotation::get_go_term($match));	
 				$page = self::fix_title($page);
 				$replacement = "[[Category:$page]][[:Category:$page|$match]]";			
-				$table = preg_replace("/([\|\s])$match/", "$1$replacement", $table);
+				#$table = preg_replace("/([\|\s])$match/", "$1$replacement", $table);
+				$table = str_replace($match, $replacement, $table);
 		#		}
 			}catch (Exception $e){
 				# don't crash when not connected to the internet or when api call fails
@@ -87,7 +90,8 @@ class TableEditGONUTSLinker extends TableEditLinker{
 }
 
 function efTableEditGONUTSStripLinks( $article, $table, $box ){
-
+	#inactivate the guts of this function based on the idea that the offending links were removed long ago.
+	return true;
 	#strip GO links
 	$table = preg_replace("/\[\[Category:.*?\]\]\[http:\/\/gowiki.tamu.edu\/wiki\/index.php\/Category:(GO:\d+)_!_.*?\]/","$1",$table);
 	#strip old GO links

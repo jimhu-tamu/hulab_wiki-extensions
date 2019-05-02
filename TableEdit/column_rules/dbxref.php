@@ -78,7 +78,7 @@ class ecTableEdit_dbxref extends TableEdit_Column_rule{
 			# validate the field content
 			$acc = $this->validate_dbxref($prefix, $acc);
 			# finish off the menu and add the text input field
-			$menu.= "</select>".XML::input("field[$this->col_index][]",10,trim($acc), array('maxlength'=>255, 'onchange'=>'this.form.submit();'));
+			$menu.= "</select>".XML::input("field[$this->col_index][]",50,trim($acc), array('maxlength'=>255, 'onchange'=>'this.form.submit();'));
 			# add the item for this line to the collection of pulldowns attached to input boxes.
 			$menu_items[] = $menu;
 			# I forget what this is for!
@@ -94,7 +94,7 @@ class ecTableEdit_dbxref extends TableEdit_Column_rule{
 		switch ($option){
 			case 'PMID':
 				#PMID has no leading zeroes
-				$acc = ltrim($acc, '0');
+				$acc = ltrim($acc, ' 0');
 				if(preg_match('/[^\d]/',$acc)){ 
 					$this->error .= "<div style='color:red'>PMID:$acc doesn't look like a PMID</div>";
 					$this->row_save_ok = false;

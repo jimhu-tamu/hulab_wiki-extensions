@@ -1,0 +1,10 @@
+{
+    "@metadata": {
+        "authors": [
+            "<JimHu>"
+        ]
+    },
+    "tabledit": "The name of the extension's entry in Special:SpecialPages",
+    "tableedit-desc": "{{desc}}",
+    "tabledit-summary": "Description appearing on top of Special:MyExtension."
+}

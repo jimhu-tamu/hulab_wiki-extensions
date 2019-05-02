@@ -27,7 +27,7 @@ switch($exMsg){
 		break;
 	case 'tableDupFound':
 		/*box was copied within a page, or pasted more than once in a new page*/
-		$buttons = TableEditView::form_button_only(wfMsg('fixDups'),array('view'=>'fix_duplicate_tables'));
+		$buttons = TableEditView::form_button_only(wfMessage('fixDups')->text(),array('view'=>'fix_duplicate_tables'));
 		break;
 	case 'page_id_mismatch':
 		/**/
@@ -39,10 +39,11 @@ switch($exMsg){
 		/**/
 		break;
 	default:
-		$output .= wfMsg($exMsg);
+#		$output .= wfMessage($exMsg)->text();
 #		$this->print_obj($handler);
 		
 }
-$output = wfMsg($exMsg);
+$output = '';
+$output = wfMessage($exMsg)->text();
 $output .= $buttons;
-$output .= "<br /><a href='$wgServer$wgScriptPath/index.php?title=$te->page_name'>".wfMsg('cancel')."</a>";
+$output .= "<br /><a href='$wgServer$wgScriptPath/index.php?title=$te->page_name'>".wfMessage('cancel')->text()."</a>";

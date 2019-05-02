@@ -1,0 +1,27 @@
+Mediawiki changed access to session and authentication data in 1.27
+
+https://www.mediawiki.org/wiki/Manual:SessionManager_and_AuthManager/Updating_tips
+
+https://www.mediawiki.org/wiki/Manual:SessionManager_and_AuthManager
+
+TableEdit uses sessions to provide persistence when tables are being edited. The documentation could be clearer.
+
+== Request object ==
+As an extension of SpecialPage, TableEdit can get a WebRequest object by calling
+$requestObj = $this->getRequest();
+
+The request object can get or set session data using session keys:
+
+	public function getSessionData( $key ) {
+		return $this->getSession()->get( $key );
+	}
+	
+and 
+
+	public function setSessionData( $key, $data ) {
+		return $this->setSession()->set( $key, $data );
+	}
+
+Note, however, that every call is instantiating a session object, so with multiple gets and sets it is better to create a session object and do get and set directly.
+
+== Session object ==

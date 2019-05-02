@@ -35,22 +35,22 @@ $wgExtensionCredits['parserhook'][] = array(
 
 //Avoid unstubbing $wgParser on setHook() too early on modern (1.12+) MW versions, as per r35980
 if ( defined( 'MW_SUPPORTS_PARSERFIRSTCALLINIT' ) ) {
-	$wgHooks['ParserBeforeTidy'][] = 'TableEditTableMarkerUpper::execute';
+#	$wgHooks['ParserBeforeTidy'][] = 'TableEditTableMarkerUpper::onParserBeforeTidy';
 } else { // Otherwise do things the old fashioned way
-	$wgExtensionFunctions[] = "TableEditTableMarkerUpper::execute";
+#	$wgExtensionFunctions[] = "TableEditTableMarkerUpper::onParserBeforeTidy";
 }
 
 
 class TableEditTableMarkerUpper{
 
-	public static function execute(&$parser, &$text){
+	public static function onParserBeforeTidy($parser, &$text){
 		$tables = self::extract_tables($text);
 		foreach($tables as $key=>$table){
+			#trigger_error(__METHOD__." $key");
 			$new_table = self::do_header($table);
 			$new_table = self::do_footer($new_table); #echo "<br>new $key $new_table"; 
 			$text = str_replace($table, $new_table, $text);
 		}
-		#die;
 		return true;
 	}
 	
@@ -130,7 +130,8 @@ class TableEditTableMarkerUpper{
 		// many tables
 		$pattern = "/<table[^>]*(tableEdit|dataTable)[^>]*>.*<\/table>/Ums";
 
-		preg_match_all($pattern, $text, $tables);
+		preg_match_all($pattern, $text, $tables); 
+
 	#	foreach($tables[0] as $table){
 		#	if(strpos($table, 'tableEdit') == 0 && strpos($table, 'dataTable') == 0) continue;
 	#	}

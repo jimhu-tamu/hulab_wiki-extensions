@@ -2,10 +2,22 @@
 /*
 TableEdit class is a controller for manipulating box objects and 
 editing pages with TableEdit tables
+
+For 1.29
+			
+article::doEdit doesn't exist anymore. Trying to replace with WikiPage::doEditContent
+public function doEditContent(
+	Content $content, $summary, $flags = 0, $baseRevId = false,
+	User $user = null, $serialFormat = null, $tags = [], $undidRevId = 0
+)
+			
+
 */
 class TableEdit extends SpecialPage{
 
 	private $diagnostics = false;
+	public $box_req = array();
+	private $sessionObj;
 
 
 	function __construct() {
@@ -29,12 +41,14 @@ class TableEdit extends SpecialPage{
 			$this->setHeaders();
 			$output = $this->initialize();
 			if ($this->page_name !=''){
-				$this->setUserPermissions($wgUser);
+				$this->setUserPermissions($wgUser); 
 				$this->set_title();
 				$this->set_box();
-				if(!is_a($this->box,'wikiBox'))	throw new Exception('boxNotFound');
-
-				$this->set_view($this->box);
+				if(!is_a($this->box,'wikiBox')){	
+					#die("line 47");
+					throw new Exception('boxNotFound');
+				}
+				$this->set_view($this->box); 
 			}else{
 				# catch arrival from Special:Specialpages; page name not set
 				# if the page name isn't set, the box won't be set either.
@@ -69,7 +83,7 @@ class TableEdit extends SpecialPage{
 					$output .= TableEditView::edit_head_view($this, $this->box);
 					break;
 				case 'edit_row':
-					wfRunHooks( 'TableEditBeforeEditRowView', array($this)  );			
+					Hooks::run( 'TableEditBeforeEditRowView', array($this)  );			
 					if(!$this->userCan['edit']) Throw new Exception('insufficientRights');
 					$output .= TableEditView::edit_row_view($this, $this->box, $this->row);
 					break;
@@ -103,7 +117,7 @@ class TableEdit extends SpecialPage{
 				case 'nav':
 					//fallthrough
 				default:
-					$output .= TableEditView::nav_view($this, $this->box);
+					$output .= TableEditView::nav_view($this, $this->box); 
 			}
 			$output .= TableEditView::extras($this, $this->box );
 			# save state
@@ -128,11 +142,12 @@ class TableEdit extends SpecialPage{
 	}
 
 	# initialization for each load of TableEdit
-	# get the request parameters from $wgRequest
+	# get the request parameters from request object provided by SpecialPage
 	# set the initial output for the top of the page
 	function initialize($reenter = false){
-		global $wgRequest, $wgUser,$wgServer,$wgScriptPath;
+		global $wgUser,$wgServer,$wgScriptPath;
 		$output = '';
+		$requestObj = $this->getRequest();
 		
 		# set object properties. This uses a loader to clean up lots of wgRequest calls
 		# and to improve readability
@@ -168,14 +183,14 @@ class TableEdit extends SpecialPage{
 			'headings'  	=> 'headings',
 			'page_name' 	=> 'pagename'
 		);
-		$this->loadPropertiesFromRequest($wgRequest, $props); #$this->print_obj($this,'loaded?');
+		$this->loadPropertiesFromRequest($requestObj, $props); #$this->print_obj($this,'loaded?');
 		# properties that are not text
-		$this->row_req['index'] = $wgRequest->getInt('row_index');
-		$this->col_index    = $wgRequest->getInt('col_index');
-		$this->back      	= $wgRequest->getInt('back');
+		$this->row_req['index'] = $requestObj->getInt('row_index');
+		$this->col_index    = $requestObj->getInt('col_index');
+		$this->back      	= $requestObj->getInt('back');
 
 		# load form fields
-		$this->field    	= $wgRequest->getArray('field');
+		$this->field    	= $requestObj->getArray('field');
 		if (is_array($this->field)){
 			foreach ($this->field as $key => $value){
 				if (is_array($value)) $this->field[$key] = implode("\n",$value);
@@ -183,20 +198,50 @@ class TableEdit extends SpecialPage{
 		}
 		
 		# From Firefox?
-		$ff = trim($wgRequest->getText('ff') );
+		$ff = trim($requestObj->getText('ff') );
 
 		# get the serialized version if there is a set action
 		# mark the session key for when this browser window was opened - for dealing with multiple tabs open at the same time.
 		if (!isset($this->browser_tab) || $this->browser_tab == '') $this->browser_tab = str_replace(' ','_',microtime());
 		$this->sesskey = "TableEdit".md5($this->box_req['box_id']).".".$wgUser->getID().$this->browser_tab;
-		if(!isset($_SESSION[$this->sesskey])) wfSetupSession();
-		if ($this->act['view'] == '' && $ff=='') unset ($_SESSION[$this->sesskey]);
-		if (isset($_SESSION[$this->sesskey])) $this->serialized = $_SESSION[$this->sesskey];
-
-		if (isset($_SESSION[$this->sesskey.'.box2'])){
-			$this->box2 = new wikiBox;
-			$this->box2 = unserialize($_SESSION[$this->sesskey.'.box2']);
+		
+		/*
+		Change to handle deprecation of wfSetupSession
+		*/
+		$this->sessionObj = $requestObj->getSession();		
+		$this->sessionObj->persist();
+		if ($this->act['view'] == '' && $ff==''){
+		#	$this->sessionObj->set($this->sesskey, '');
 		}
+		# this will load with null if the session was just cleared.
+		$this->serialized = $this->sessionObj->get($this->sesskey);
+		
+		if($this->sessionObj->exists($this->sesskey.'.box2')){
+			$this->box2 = new wikiBox;
+			$this->box2 = unserialize($this->sessionObj->get($this->sesskey.'.box2'));		
+		}	
+		
+		#if(!isset($_SESSION[$this->sesskey])) wfSetupSession();
+		#if ($this->act['view'] == '' && $ff=='') unset ($_SESSION[$this->sesskey]);
+		#if (isset($_SESSION[$this->sesskey])) $this->serialized = $_SESSION[$this->sesskey];
+
+		#if (isset($_SESSION[$this->sesskey.'.box2'])){
+		#	$this->box2 = new wikiBox;
+		#	$this->box2 = unserialize($_SESSION[$this->sesskey.'.box2']);
+		#}
+		
+		# read the view history
+
+		#if($this->act['view'] == ''){ 
+		#	$this->sessionObj->set($this->sesskey.'TableEditHist', '');
+		#}	
+		if ($this->sessionObj->exists($this->sesskey.'TableEditHist')){ 
+			$this->view_history = unserialize($this->sessionObj->get($this->sesskey.'TableEditHist'));
+		}	
+		if($this->back == 1) array_shift($this->view_history);
+		$this->previous_view = @$this->view_history[0];
+
+		# reusable links
 		#set the old delimiter (where we expect to see the table on the page)
 		$this->url = $wgServer.$wgScriptPath."/index.php?title=Special:TableEdit"
 			."&pagename=$this->page_name"
@@ -207,15 +252,7 @@ class TableEdit extends SpecialPage{
 			."&browser_tab=".$this->browser_tab
 			;
 		$this->old_delimiter = "<!--box uid=".$this->box_req['box_id']."-->";
-
-		# read the view history
-
-		if($this->act['view'] == '') unset($_SESSION[$this->sesskey.'TableEditHist']);
-		if (isset($_SESSION[$this->sesskey.'TableEditHist']) && $_SESSION[$this->sesskey.'TableEditHist'] != '') $this->view_history = unserialize($_SESSION[$this->sesskey.'TableEditHist']);
-		if($this->back == 1) array_shift($this->view_history);
-		$this->previous_view = @$this->view_history[0];
-
-		# reusable links
+		
 		$extras = '';
 		if (isset($this->row_req['index'])) $extras .="&row_index=".$this->row_req['index'];
 
@@ -226,9 +263,8 @@ class TableEdit extends SpecialPage{
 		if ($this->page_name == '') $link = '';
 		$output .= "\n<h2><span class = 'editsection'>$link</span>".str_replace('_',' ', $this->page_name)."</h2><a id='top'></a>\n";
 
-
 		#Firefox problem
-		if ($this->browser($wgRequest) == 'Firefox' && $this->act['view'] == '' &&  $ff == ''){
+		if ($this->browser($requestObj) == 'Firefox' && $this->act['view'] == '' &&  $ff == ''){
 			header("Location:". $this->url ."&view=new&foo=" .@$_SESSION[$this->sesskey.'TableEditView']);
 		}
 		$this->uid = $wgUser->getID();
@@ -267,7 +303,7 @@ class TableEdit extends SpecialPage{
 			'edit' => $user->isAllowed('edit'),
 			'delete' => $user->isAllowed('delete')
 		);
-		wfRunHooks( 'TableEditUserPermissions', array(&$userCan)  );	
+		Hooks::run( 'TableEditUserPermissions', array(&$userCan)  );	
 		$this->userCan = $userCan;
 		return true;
 	}
@@ -294,18 +330,34 @@ class TableEdit extends SpecialPage{
 	Table was made on a new page so that page_uid = 0
 	*/
 	function set_box(){
-		if ($this->box_req['box_id'] == '') throw new Exception('boxNotFound');
+		if ($this->box_req['box_id'] == ''){ 
+			throw new Exception('boxNotFound');
+		}	
 		$box = new wikiBox();
 		# this should eval false only on the first load from the Edit link
 		if($this->act['view'] != '' && $this->act['view'] != 'csv'){
-			$box = unserialize( $this->serialized );
+			$box = unserialize( $this->serialized ); 
+		/*	error_reporting(E_ALL);
+			trigger_error(__METHOD__);
+			echo "<pre>";
+			echo "\n\nthis->sesskey\n";
+			var_dump($this->sesskey); 
+			echo "_SESSION\n";
+			var_dump($_SESSION);
+			echo "\n\nthis->serialized\n";
+			var_dump($this->serialized); 
+			echo "</pre>";
+			die(__METHOD__); */
+			
 			$this->debug['set from'] = 'session';
 			$this->box_uid = (isset($box->box_uid)) ? $box->box_uid : null;
 		} else {
 			# get the current page and check the frequency of the delimiter
 			# throw an error if the same table shows up more than once on the page
-			$old_page = Revision::newFromTitle($this->titleObj);
-			$this->old_page_text = $old_page->getText();
+			$old_page = WikiPage::factory($this->titleObj);
+			$revision = $old_page->getRevision();
+			$content = $revision->getContent( Revision::RAW );
+			$this->old_page_text = ContentHandler::getContentText( $content );
 			if(substr_count($this->old_page_text, $this->old_delimiter) > 2 ) throw new Exception('tableDupFound');
 			# make a box from the box_id
 			$box->box_uid = $this->box_req['box_id'];
@@ -345,7 +397,7 @@ class TableEdit extends SpecialPage{
 			}
 			$this->debug['set from'] = 'db';
 		}
-		$this->box = $box;
+		$this->box = $box; 
 
 		return true;
 	}
@@ -658,9 +710,9 @@ class TableEdit extends SpecialPage{
 
 	# function add from file
 	function add_multiple(){
-		global $IP,$wgScriptPath, $wgRequest;
-
-		$upload_type = trim($wgRequest->getVal('upload_type'));
+		global $IP,$wgScriptPath;
+		$requestObj = $this->getRequest();
+		$upload_type = trim($requestObj->getVal('upload_type'));
 		$allowed_types = array(
 			'txt' 	=> array('TEXT'),
 			'xls'	=> array('OFFICE'),
@@ -735,19 +787,30 @@ END;
 
 	# preserves session data on current state
 	function save_state(){
-		global $wgRequest;
+		$requestObj = $this->getRequest();
 		# save the working and alternate boxes
-		if (isset($this->box) && is_object($this->box)) $_SESSION[$this->sesskey] = $this->box->get_serialized();
-		if (isset($this->box2) && is_object($this->box2)) $_SESSION[$this->sesskey.'.box2'] = $this->box2->get_serialized();
-
+		if (isset($this->box) && is_object($this->box)){ 
+			$this->sessionObj->set($this->sesskey, $this->box->get_serialized());
+		}else{
+			var_dump($this->box);
+			die("this->box is unset");
+		}	
+		if (isset($this->box2) && is_object($this->box2)){
+			$this->sessionObj->set($this->sesskey.'.box2', $this->box2->get_serialized());
+		}
 		#save the views used
+		#suppress warning when history is empty
+		if(empty($this->view_history)) $this->view_history[] = '';
 		$norecord = array($this->view_history[0],'force_delete','force_save','save','doc');
 		if(!in_array($this->act['view'],$norecord)){
 			array_unshift($this->view_history, $this->act['view']);
 		}
-		if ($this->act['view'] == 'conflict' ) $_SESSION[$this->sesskey.'TableEditView'] = $this->act['view'];
-		else $_SESSION[$this->sesskey.'TableEditView'] = 'nav';
-		$_SESSION[$this->sesskey.'TableEditHist'] = serialize($this->view_history);
+		if ($this->act['view'] == 'conflict' ){
+			$this->sessionObj->set($this->sesskey.'TableEditView', $this->act['view']);
+		}else{
+			$this->sessionObj->set($this->sesskey.'TableEditView', 'nav');
+			$this->sessionObj->set($this->sesskey.'TableEditHist', serialize($this->view_history));
+		}	
 		return true;
 	}
 
@@ -826,7 +889,7 @@ END;
 		}
 		// gets called whenever anyone clicks "save" on a row...
 		// NOT when the row is actually saved to the database.
-		wfRunHooks( 'TableEditSaveRow', array( &$this, &$box, &$row, $original_data)  );
+		Hooks::run( 'TableEditSaveRow', array( &$this, &$box, &$row, $original_data)  );
 
 		return true;
 	}
@@ -854,7 +917,7 @@ END;
 			# apply rules
 			#TableEdit::print_obj($row_data[$i],"row_data $i");
 			$rule_fields = $box->column_rules[$i];
-			wfRunHooks( 'TableEditBeforeApplyColumnRules', array( &$this, &$rule_fields, &$box, $row->row_id, &$row_data, $i, &$type) );
+			Hooks::run( 'TableEditBeforeApplyColumnRules', array( $this, &$rule_fields, $box, $row->row_id, $row_data, $i, $type) );
 			if (isset($rule_fields[0])){
 				switch ($rule_fields[0]){
 					# first two cases only are relevant to EDIT mode.  If in SAVE mode, just return the row_data unaltered.
@@ -1012,7 +1075,7 @@ END;
 						}
 						break;
 					default:
-						wfRunHooks( 'TableEditApplyColumnRules', array( &$this, $rule_fields, &$box, $row->row_id, &$row_data, $i, &$type) );
+						Hooks::run( 'TableEditApplyColumnRules', array( $this, $rule_fields, $box, $row->row_id, &$row_data, $i, &$type) );
 						break;
 				}
 			}
@@ -1048,7 +1111,6 @@ END;
 		}
 		return trim(str_replace('_',' ',$string));
 	}
-
 
 	/**
 	 * Compares two box objects and checks for conflicts.
@@ -1162,7 +1224,7 @@ END;
 		$table = preg_replace('/\n\|\}\n$/',$editlink, $table);
 
 		if ( !$for_export ) {
-			wfRunHooks( 'TableEditBeforeSave', array( &$this, &$table, &$box ) );
+			Hooks::run( 'TableEditBeforeSave', array( &$this, &$table, &$box ) );
 
 			// glue everything together into one big string
 			$ret = 	$delimiter .
@@ -1227,7 +1289,7 @@ END;
 									// save the object to the db...
 									$rel_box->save_to_db();
 									// ...and remake the page and table on it.
-									$article = new Article(Title::newFromDBkey(  urldecode($rel_box->page_name)  ));
+									$article = new WikiPage(Title::newFromDBkey(  urldecode($rel_box->page_name)  ));
 									$article->fetchContent();
 									$new_content = str_replace(
 										$this->getTableFromWikitext($article->mContent, $rel_box),
@@ -1258,11 +1320,15 @@ END;
 			$this->get_old_table($title, $box);
 			$new_page = str_replace($this->old_table, $replacement, $this->old_page_text);
 			if (trim($this->old_page_text) != trim($new_page)){
-				$article = new Article($title);
 				# check again that the page doesn't already exist (just in case)
 				# hook to edit the new page before saving. For things like category tags.
-				wfRunHooks( 'TableEditBeforeArticleSave', array( &$new_page ) );
-				$article->doEdit( $new_page, wfMessage('saveMsg',$act_msg, $wgUser->getName())->text(), EDIT_UPDATE );
+				Hooks::run( 'TableEditBeforeArticleSave', array( &$new_page ) );
+				$wikiPage = new WikiPage($title);
+				$newPageContent = ContentHandler::makeContent($new_page, $title);
+				$wikiPage->doEditContent( $newPageContent, #content
+										wfMessage('saveMsg',$act_msg)->text(), #summary
+										EDIT_UPDATE  #flags
+										);
 			}
 		} # end if $wgUser->isAllowed
 		if (isset($this->box_req['box_id'])) unset($_SESSION[$this->sesskey]);
@@ -1307,7 +1373,7 @@ END;
 		global $wgUser,$wgParser;
 		$old_box = new wikiBox;
 		$old_box->page_name = $this->page_name;
-		$old_table = $this->get_old_table($title, $box);
+		$old_table = $this->get_old_table($title, $box); 
 		$output = $wgParser->parse(
 			$old_table,
 			$this->titleObj,
@@ -1347,7 +1413,7 @@ END;
 
 		if (isset($data)){
 			foreach ($data as $ykey => $rowdata){
-				wfRunHooks( 'TableEditCheckConflict', array( &$this, &$rowdata, &$box ) );
+				Hooks::run( 'TableEditCheckConflict', array( &$this, &$rowdata, &$box ) );
 				$old_box->insert_row(implode('||',$rowdata),0,implode(' ',array_unique($style[$ykey]) ) );
 
 			}
@@ -1412,11 +1478,13 @@ END;
 	 */
 	function get_old_table($title,$box){
 		$old_page = WikiPage::factory($title);
-		$this->old_page_text = $old_page->getText(); 
+		$revision = $old_page->getRevision();
+		$content = $revision->getContent( Revision::RAW );
+		$this->old_page_text = ContentHandler::getContentText( $content );
 		$delimiter = str_replace('.','\.', $this->old_delimiter);	# . escaped in regex
 		$delimiter = str_replace('<!--','<\!--', $delimiter);		# ! escaped in regex
 		$pattern = "!$delimiter(.*)$delimiter!isU";
-		preg_match ($pattern,$this->old_page_text, $matches);
+		preg_match ($pattern, $this->old_page_text, $matches);
 		# something is there
 		$this->old_table = $matches[0]; #echo "<pre>$pattern\n\n";print_r($matches);echo "</pre>";
 		return $this->old_table;
@@ -1442,7 +1510,7 @@ END;
 		}
 	#	$this->print_obj($this->titleObj);
 		$article = new Article($this->titleObj);
-		$article->doEdit( $new_page, wfMessage('saveMsg','fix duplicate tables', $wgUser->getName())->text(), EDIT_UPDATE );
+	#	$article->doEdit( $new_page, wfMessage('saveMsg','fix duplicate tables', $wgUser->getName())->text(), EDIT_UPDATE );
 		$wgOut->redirect($this->titleObj->getFullURL());
 		return true;
 	}
@@ -1665,6 +1733,9 @@ Needs method documentation
 		return $reordered_arr;
 	}
 
+	/*
+	This method was added in version 1.0 but is not called anywhere?
+	*/
 	function reorder_template( $template_str, $new_column_order_arr ) {
 		// check for things we need.
 		if (!$template_str || !$new_column_order_arr) return false;

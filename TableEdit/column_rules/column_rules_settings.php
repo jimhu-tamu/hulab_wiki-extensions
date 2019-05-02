@@ -28,12 +28,12 @@ $wgHooks['TableEditApplyColumnRules'][] = 'efTableEdit_run_column_rules';
 
 /*
 	Hook call from SpecialTableEdit.body.php
-	wfRunHooks( 'TableEditApplyColumnRules', array(  &$this, $rule_fields, &$box, $row->row_id, &$row_data, $i, &$type );
+	Hooks::run( 'TableEditApplyColumnRules', array(  $this, $rule_fields, $box, $row->row_id, $row_data, $i, &$type );
 	
 	name of the rule is $rule_fields[0] 
 	
 */
-function efTableEdit_run_column_rules( $te, $rule_fields, $box, $row_id, $row_data, $i, $type ){
+function efTableEdit_run_column_rules( $te, $rule_fields, $box, $row_id, &$row_data, $i, &$type ){
 	global $te_column_rules;
 	# short circuit if column rule not registered
 	if (!array_key_exists($rule_fields[0], $te_column_rules)) return true;

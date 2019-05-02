@@ -1,0 +1,51 @@
+{
+	"name": "TableEdit",
+	"description": "TableEdit adds a forms-based table editor as a special page",
+	"author":	"[mailto:jimhu@tamu.edu Jim Hu] (since 0.2)",
+	"version": "1.3",	
+	"manifest_version": 1,
+	"Hooks": {
+		"PageContentSave": "TableEditHookFunctions::OnPageContentSave",
+		"ArticleDeleteComplete": "TableEditHookFunctions::DeleteTables",
+		"TitleMoveComplete":"TableEditHookFunctions::MovePage",
+		"ParserBeforeTidy": "TableEditTableMarkerUpper::onParserBeforeTidy",
+		"BeforePageDisplay": "TableEditHookFunctions::AddHeadThings",
+		"ParserBeforeStrip": "GONUTSlinkerFactory::efTableEditLinks"
+	},
+	"AutoloadClasses": {
+		"TableEditHookFunctions": "TableEdit.php",
+		"wikiBox": "class.wikiBox.php",
+		"wikiBoxRow": "class.wikiBox.php",
+		"TableEdit": "SpecialTableEdit.body.php",
+		"TableEditView": "class.TableEditView.php",
+		"TableEditLinker": "modules/TableEditLinks.php",
+		"TableEditGONUTSLinker": "modules/GONUTS_TableEditLinks.php",
+		"GONUTSlinkerFactory": "modules/GONUTS_TableEditLinks.php",
+		"TableEditLinker": "modules/TableEditLinks.php",
+		"TableCategoryTags": "modules/TableEditCategoryTags.php",
+		"TableEditTableMarkerUpper": "modules/TableMarkerUpper.php"
+	},
+	"ResourceModules": {
+			"ext.TableEdit": {
+				"scripts":"js/init_datatables.js",
+				"styles" :"css/main.css",
+				"dependencies":"ext.datatables"
+			}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteExtPath": "TableEdit"
+	},
+	"SpecialPages": {
+		"TableEdit": "TableEdit"
+	},
+	"MessagesDirs": {
+		"TableEdit": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"TableEditAlias": "i18n/TableEdit.i18n.alias.php"
+	},
+	"manifest_version": 1
+}

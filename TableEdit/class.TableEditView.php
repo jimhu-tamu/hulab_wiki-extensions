@@ -32,7 +32,7 @@ END;
 			Xml::openElement( 'textarea', array( 'name' => "bulk_add_form", 'cols' => 80, 'rows' => 10 )).
 			''.
 			Xml::closeElement( 'textarea' ).
-			self::form_button(wfMsg('save'))
+			self::form_button(wfMessage('save')->text())
 		);
 		$string .= <<<END
   </li>
@@ -58,9 +58,9 @@ END;
 			'<b>Filename: </b>' .
 			XML::input('bulk_add_file', 40, 'Image:', array('maxlength'=>255) ) .
 			'<br />' .
-			self::form_button(wfMsg('load'))
+			self::form_button(wfMessage('load')->text())
 		);
-		$string .= "</li></ol><br /><br /><a href='$this->url'>".wfMsg('cancel')."</a>\n\n";
+		$string .= "</li></ol><br /><br /><a href='$this->url'>".wfMessage('cancel')->text()."</a>\n\n";
 
 		return $string;
 	}
@@ -123,7 +123,7 @@ END;
 
 		# box for table from wiki or db
 		if ($box->template != '') $box2->template = $box->template; # restore template control for things like menus and calcs
-		$string .= '<h3>'.wfMessage('savedVersion')->text().'</h3>';
+		$string .= '<h3>'.wfMessage('conflicting-rows')->text().'</h3>';
 		$string .= self::box2html($te, $box2,'',$edit_form2,false,2)."";
 		$string .= '<p>'.wfMessage('conflictExplain')->text()."</p>";
 		$string .= '<p>'.wfMessage('conflictHelp')->text()."</p><br/>";
@@ -175,15 +175,15 @@ END;
 		    <table class=\"tableEdit_edit_head\">
 		      <tr>
 		        <td>" .
-		          self::form_button(wfMsg('save')) . "<a href='".$te->url."&view=nav&act=restoreheadings'>".wfMsg('cancel')."</a>" .
+		          self::form_button(wfMessage('save')->text()) . "<a href='".$te->url."&view=nav&act=restoreheadings'>".wfMessage('cancel')->text()."</a>" .
 		      "</td>";
 
 		if ($box->template == '') {
 			$table .=
-			"<td>".self::form_button(wfMsg('addHeading'))       ."</td>"
-			."<td>".self::form_button(wfMsg('deleteLastHeading'))."</td>";
+			"<td>".self::form_button(wfMessage('addHeading')->text())       ."</td>"
+			."<td>".self::form_button(wfMessage('deleteLastHeading')->text())."</td>";
 		} else {
-			$table .=wfMsg('cantEditHeadings', $box->template).wfMsg('canOverrideStyle');
+			$table .=wfMessage('cantEditHeadings', $box->template)->text().wfMessage('canOverrideStyle')->text();
 		}
 		# reassemble the table
 		$table = self::form($te, $table);
@@ -260,14 +260,14 @@ END;
 		 * The save button on the edit-row form should be more explicit about
 		 * saving back to the table and not saving the table itself.
 		 */
-		$table .= self::form_button(wfMsg('save-row')).' '
-			." <a href='".$te->url."&view=nav&act=restorerow&row_index=".$row->row_index."'>".wfMsg('cancel')."</a>"
+		$table .= self::form_button(wfMessage('save-row')->text()).' '
+			." <a href='".$te->url."&view=nav&act=restorerow&row_index=".$row->row_index."'>".wfMessage('cancel')->text()."</a>"
 			."</td></tr></table><br/>\n";
-		if ($select_owner !='') $table.= wfMsg('explainOwnerRules').'<br/><br/>';
+		if ($select_owner !='') $table.= wfMessage('explainOwnerRules')->text().'<br/><br/>';
 		if ( !$skip_style ) {
-			$table .= wfMsg('editRowStyle').
+			$table .= wfMessage('editRowStyle')->text().
 			XML::input('row_style', 40, $row->row_style, array('maxlength'=>255) )."<br/>"
-			.wfMsg('rowStyleExample');
+			.wfMessage('rowStyleExample')->text();
 		}
 		$table = implode (' ',$te->msg).self::form($te, $table);
 		#$table .= '</td></tr></table>';
@@ -282,7 +282,7 @@ END;
 
 	static function exception_view(TableEdit $te, $e){
 		#hold exceptions in another file
-		include (dirname(__FILE__) ."/SpecialTableEdit.Ex.php");
+		include_once (dirname(__FILE__) ."/SpecialTableEdit.Ex.php");
 		return $output;
 
 	}
@@ -307,8 +307,8 @@ END;
 					.Html::hidden('meta_id',$key)
 					.XML::input ('metadata',40,$metadata->metadata)
 					. '<br />' . $timestamp . '<br />'
-					.self::form_button(wfMsg('save'))
-					.self::form_button(wfMsg('delete'))
+					.self::form_button(wfMessage('save')->text())
+					.self::form_button(wfMessage('delete')->text())
 				)."</td><tr>\n";
 			}
 		}
@@ -319,7 +319,7 @@ END;
 				''
 				.Html::hidden('meta_type','box')
 				.XML::input ('metadata',40)
-				.self::form_button(wfMsg('add')
+				.self::form_button(wfMessage('add')->text()
 				)
 			)."<br/><hr/>\n";
 		# row metadata
@@ -360,8 +360,8 @@ END;
 					$html .= Html::hidden('row_index',$row->row_index);
 					$html .= Html::hidden('meta_id',$key);
 					$html .= Html::hidden('meta_type','row');
-					$html .= self::form_button(wfMsg('save'  ));
-					$html .= self::form_button(wfMsg('delete'));
+					$html .= self::form_button(wfMessage('save')->text());
+					$html .= self::form_button(wfMessage('delete')->text());
 
 					// throw it onto the table inside a form
 					$table .= self::form($te, $html) . "<br />";
@@ -382,8 +382,8 @@ END;
 					$html .= Html::hidden('row_index',$row->row_index);
 					$html .= Html::hidden('meta_id',$key);
 					$html .= Html::hidden('meta_type','row');
-					$html .= self::form_button(wfMsg('save'  ));
-					$html .= self::form_button(wfMsg('delete'));
+					$html .= self::form_button(wfMessage('save')->text());
+					$html .= self::form_button(wfMessage('delete')->text());
 
 					// throw it onto the table inside a form
 					$table .=self::form($te, $html) . "<br />";
@@ -396,12 +396,12 @@ END;
 				.Html::hidden('meta_type','row')
 				.Html::hidden('row_index',$row->row_index)
 				.XML::input('metadata',40)
-				.self::form_button(wfMsg('add'))
+				.self::form_button(wfMessage('add')->text())
 				)."</td></tr>";
 		}
 		$table .= "</table>";
 		$table .= "<table class=\"tableEdit_metadata3\"><tr>"
-			."<td>".self::form_button_only($te, wfMsg('revertMeta'))."</td>"
+			."<td>".self::form_button_only($te, wfMessage('revertMeta')->text())."</td>"
 			."<td>".$te->backlink."</td>";
 		$table .= "</tr></table>";
 		return $table;
@@ -417,9 +417,9 @@ END;
 		foreach ($te->msg as $msg) $string .= "<p>$msg</p>";
 		$string .= "<table class=\"tableEdit_msg\"><tr>";
 		foreach ($buttons as $view=>$label){
-			$string .= "<td>".self::form_button_only($te, wfMsg($label), array('view' => $view));
+			$string .= "<td>".self::form_button_only($te, wfMessage($label)->text(), array('view' => $view));
 		}
-		$string .= "<td>"."<a href='".$te->url."&view=".$te->previous_view."&back=1'>".wfMsg('back')."</a>"."</td></tr></table>";
+		$string .= "<td>"."<a href='".$te->url."&view=".$te->previous_view."&back=1'>".wfMessage('back')->text()."</a>"."</td></tr></table>";
 		return $string;
 	}
 
@@ -431,7 +431,7 @@ END;
 		// show an edit headings button if there is no template
 		$editheadings = '';
 		if ($box->template == '')  {
-			$editheadings = self::form_button_only($te, wfMsg('editHeadings') );
+			$editheadings = self::form_button_only($te, wfMessage('editHeadings')->text() );
 		}
 
 		// loop through the rows and add the buttons to the left side
@@ -452,48 +452,48 @@ END;
 
 		// add bottom buttons
 		$addBottomButtons = true;
-		wfRunHooks( 'TableEditBeforeAddData', array( $box, &$addBottomButtons ) );
+		Hooks::run( 'TableEditBeforeAddData', array( $box, &$addBottomButtons ) );
 		if($addBottomButtons || $wgUser->isAllowed('userrights')){
 			$addtype = 'row';
 			if ($box->type == 1) $addtype = 'column';
 			$string .= '<table class=\"tableEdit_nav1\">';
-			$string .="<tr><td>".self::form_button_only($te, wfMsg('addData',wfMsg($addtype)))."</td>";
-			$string .="<td>".self::form_button_only($te, wfMsg('addMultiple'))."</td>";
+			$string .="<tr><td>".self::form_button_only($te, wfMessage('addData',wfMessage($addtype)->text())->text())."</td>";
+			$string .="<td>".self::form_button_only($te, wfMessage('addMultiple')->text())."</td>";
 			/*   save as *.xls   */
-			//$string .= '<td>' . self::form_button_only($te, wfMsg('saveAsXLS')) . '</td>';
+			//$string .= '<td>' . self::form_button_only($te, wfMessage('saveAsXLS')->text()) . '</td>';
 			$string .= '</tr></table><hr />';
 		}
 		if ( (isset($box->template) && $box->template == "" ) || $wgUser->isAllowed('userrights')) {
 			$string .= "<table class=\"tableEdit_nav2\"><tr>";
-			if ($box->type <= 1 && $box->template == '') $string .= "<td>".self::form_button_only($te, wfMsg('rotate') )."</td>";
+			if ($box->type <= 1 && $box->template == '') $string .= "<td>".self::form_button_only($te, wfMessage('rotate')->text() )."</td>";
 			#styles
-			$string .= '<td>'.wfMsg('boxStyle').'<br/>'
+			$string .= '<td>'.wfMessage('boxStyle')->text().'<br/>'
 				.self::form(
 					$te,
 					 XML::input('box_style', 40, $box->box_style, array('maxlength'=>255) ) .'<br/>'
-					.wfMsg('boxStyleExample').'</td>'
-					. '<td>'.wfMsg('headingStyle').'<br/>'
+					.wfMessage('boxStyleExample')->text().'</td>'
+					. '<td>'.wfMessage('headingStyle')->text().'<br/>'
 					.XML::input('style', 40, $box->heading_style, array('maxlength'=>255) )
-					.self::form_button(wfMsg('saveStyles')).'<br/>'
-					.wfMsg('headingStyleExample') ).'</td>';
+					.self::form_button(wfMessage('saveStyles')->text()).'<br/>'
+					.wfMessage('headingStyleExample')->text() ).'</td>';
 			$string	.= "</tr></table><hr/>";
 		}
 
 		# bottom row of action controls
 		$string .="<br/><table class=\"tableEdit_nav3\"><tr><td> "
-			.self::form_button_only($te, wfMsg('saveToPage', $box->page_name), array('view' => 'save'))."</td>";
-		$string .= "<td><a href='$wgServer$wgScriptPath/index.php?title=".urlencode($box->page_name)."'>".wfMsg('cancel')."</a></td>";
+			.self::form_button_only($te, wfMessage('saveToPage', $box->page_name)->text(), array('view' => 'save'))."</td>";
+		$string .= "<td><a href='$wgServer$wgScriptPath/index.php?title=".urlencode($box->page_name)."'>".wfMessage('cancel')->text()."</a></td>";
 		$undelete = $warn = $revert = '';
-		if($box->has_deleted_rows()) $undelete = self::form_button_only($te, wfMsg('undeleteRows'));
+		if($box->has_deleted_rows()) $undelete = self::form_button_only($te, wfMessage('undeleteRows')->text());
 		$warn = '';
 		if($box->is_changed || $box->has_deleted_rows()){
-			$revert = self::form_button_only($te, wfMsg('revertToSaved'));
-			$te->msg[] = "<span style='color:red'>".wfMsg('changesNotSavedUntil')."</span>";
+			$revert = self::form_button_only($te, wfMessage('revertToSaved')->text());
+			$te->msg[] = "<span style='color:red'>".wfMessage('changesNotSavedUntil')->text()."</span>";
 		}
 
 		$string .= "<td width = '50%' align = 'right'>$revert</td>"
 			."<td>$undelete</td>"
-			."<td width = '30%' align = 'right'>".self::form_button_only($te, wfMsg('deleteTable'), array('view'=>'delete'))."</td>"
+			."<td width = '30%' align = 'right'>".self::form_button_only($te, wfMessage('deleteTable')->text(), array('view'=>'delete'))."</td>"
 			."</tr></table>";
 
 		foreach($te->msg as $message) $warn .= $message.'<br />';
@@ -519,10 +519,10 @@ END;
 		if ($wgUser->isAllowed('userrights')){
 			$string = "<br /><div class=\"tableEdit_extras\" \"><h3>Admin</h3>";
 			if( $te->act['view'] != 'metadata') {
-				$string .= self::form_button_only($te, wfMsg('viewMeta'), array('view'=>'metadata','row_index' => @$te->row_req['index']));
+				$string .= self::form_button_only($te, wfMessage('viewMeta')->text(), array('view'=>'metadata','row_index' => @$te->row_req['index']));
 			}
 			if ($te->act['view'] != 'box_dump') {
-				$string .= self::form_button_only($te, wfMsg('dumpBox'),array('view'=>'box_dump'));
+				$string .= self::form_button_only($te, wfMessage('dumpBox')->text(),array('view'=>'box_dump'));
 			}
 			if ( isset($box->template) && $box->template != "" ) {
 				$string .= sprintf('<b>Template:</b> <a href="%s%s/index.php?title=Template:%s">%s</a><br />', $wgServer, $wgScriptPath, $box->template, $box->template);
@@ -545,7 +545,7 @@ END;
  */
 	function reconcile_foreign_table_view(WikiBox $box ){
 		echo '<pre>' . var_export($box, true) . '</pre>';
-		$string = wfMsg('reconcile_foreign_table', "<i style=\"font-size:larger\">that other table there</i>");
+		$string = wfMessage('reconcile_foreign_table', "<i style=\"font-size:larger\">that other table there</i>")->text();
 		$string .= '<br /><br />';
 		$string .= self::form_button("Revert");
 		$string .= self::form_button("Update");
@@ -615,10 +615,10 @@ END;
 			.Html::hidden('row_data' , $row->row_data)
 			.Html::hidden('row_style', $row->row_style);
 		if ($te->conflict !='') $content .= Html::hidden('conflict',$te->conflict);
-		$edit 	= self::form_button(wfMsg('edit'  ) );
-		$copy 	= self::form_button(wfMsg('copy'  ) );
-		$delete = self::form_button(wfMsg('delete') );
-		$move = self::form_button(wfMsg('move-row') );
+		$edit 	= self::form_button(wfMessage('edit'  )->text() );
+		$copy 	= self::form_button(wfMessage('copy'  )->text() );
+		$delete = self::form_button(wfMessage('delete')->text() );
+		$move = self::form_button(wfMessage('move-row')->text() );
 		switch ($type){
 			case "Copy":
 				$edit = $delete = '';
@@ -629,7 +629,7 @@ END;
 		}
 		$owner_uid = $row->owner_uid;
 		$form = '';
-		wfRunHooks( 'TableEditRowButtons', array( $te->box, $row, &$copy, &$delete, &$move, &$owner_uid ) );
+		Hooks::run( 'TableEditRowButtons', array( $te->box, $row, &$copy, &$delete, &$move, &$owner_uid ) );
 
 		if($owner_uid == 0 || $owner_uid == $wgUser->getID() || in_array('bureaucrat', $wgUser->getEffectiveGroups())){
 			$form .= self::form($te, "$content $edit $copy $delete $move");

@@ -40,7 +40,7 @@ switch($previous_view){
 		$inc_file = (dirname(__FILE__) . '/docs/default.php');
 
 }
-$output = "<p>".wfMsg('helpIsContextual')."To customize this Help document, edit the page <a href='index.php?title=$help_page'>$help_page</a></p>\n";
+$output = "<p>".wfMessage('helpIsContextual')->text()."To customize this Help document, edit the page <a href='index.php?title=$help_page'>$help_page</a></p>\n";
 
 $h = self::get_page_html(str_replace(' ','_',$help_page) );
 if ($h != ''){ 
@@ -50,5 +50,5 @@ if ($h != ''){
 	# use the message cache to support language translations of help pages.
 	global $wgMessageCache;
 	#foreach( $TableEditDocs as $key => $value ) 	$wgMessageCache->addMessages( $TableEditDocs[$key], $key );
-	$output .= wfMsg('tableEditDocs');
+	$output .= wfMessage('tableEditDocs')->text();
 }

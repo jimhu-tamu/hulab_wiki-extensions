@@ -38,6 +38,7 @@ abstract class TableEditLinker{
 	}
 	
 	function execute(){
+		$time = time();
 		foreach ($this->tables[0] as $table){
 			$old = $table;
 			preg_match('/title=Special:TableEdit\&id=(.*?)\&/',$table, $ids);
@@ -49,7 +50,9 @@ abstract class TableEditLinker{
 				$table = $this->table_specific_links($table, $box->template);
 				$this->text = str_replace($old, $table, $this->text);
 			}
-		}		
+		}
+		$elapsed = time() - $time;
+#		trigger_error(__METHOD__.": $elapsed");		
 		return $this->text;
 	}
 
@@ -130,7 +133,7 @@ abstract class TableEditLinker{
 			# UniProtKB
 			"/UniProtKB:([A-Za-z0-9]+)/" => "[http://www.uniprot.org/uniprot/%s %s]",
 			# CheBI
-			"/CHEBI:(\d+)/"  => "[http://www.ebi.ac.uk/chebi/searchId.do?chebiId=/%s %s]",
+			"/(CHEBI:\d+)/"  => "[http://www.ebi.ac.uk/chebi/searchId.do?chebiId=%s %s]",
 			# HAMAP
 			"/HAMAP:([A-Za-z]{2}_\d+)/" => "[http://ca.expasy.org/unirule//%s %s]",
 			#EcoCyc

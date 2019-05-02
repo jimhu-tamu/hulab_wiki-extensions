@@ -10,7 +10,19 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 
 	private $ontology;
 	private $dbi;
-	private $wcodes = array('IPI','IGI','ISS','ISO','ISA','ISM', 'IEA', 'IGC', 'IC');
+	private $wcodes = array(
+		'IGI' => "ECO:0000316",
+		'IPI' => "ECO:0000021",
+		'ISA' => "ECO:0000247",
+		'ISO' => "ECO:0000266",
+		'ISM'=> "ECO:0000255",
+		'IGC' => "ECO:0000317",
+		'ISS' => "ECO:0000250",
+		'IP' => "ECO:0000080",
+		'IC' => "ECO:0000305",
+	#'IPI','IGI','ISS','ISO','ISA','ISM', 'IEA', 'IGC', 'IC'
+	
+	);
 
 	function __construct($te, $box, $rule_fields, $row_id, $row_data, $col_index){
 		global $wgCodePath;
@@ -30,7 +42,7 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 	}
 
 	function make_form_row(){
-	#	echo "<pre>";	print_r($this); echo "</pre>";die;
+		#echo __METHOD__."<pre>";	print_r($this); echo "</pre>";die;
 
 		$index = $this->col_index;
 		if(is_string($this->col_name) && method_exists($this, $this->col_name)){
@@ -66,10 +78,17 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 						"<div style='color:green'>Guessing that when you wrote $this->col_data you meant...</div>";
 				}
 			}
-			if(trim($go_id) != '' && $this->term->name == ''){
+			if($this->term->name == ''){
 				$go_id = $this->col_data;
 				$this->error =
 					"<div style='color:red'>$this->col_data doesn't look like a GO id</div>";
+			}else{
+				#check that the term is current
+				if($this->dbi->get_header_rev_id() != $this->term->last_data_version){
+					#$this->error =
+					#"<div style='color:red'>$this->col_data is not a primary id in the current version of GO</div>";
+				}
+			
 			}
 		}
 		return TableEditView::form_field($this->col_index, $go_id, 40,'text');
@@ -88,8 +107,9 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 	}
 	
 	function evidence_code(){
-		$tmp = explode(':', $this->row_hash['evidence']);
-		return $tmp[0];
+		#$tmp = explode(':', $this->row_hash['evidence']);
+		#return $tmp[0];
+		return $this->row_hash['eco_id'];
 	}
 
 	function page(){
@@ -110,13 +130,14 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 		array_shift($options);
 		array_unshift($options,'');
 		foreach ($wlines as $wtmp) {
+			if($wtmp == '-') $wtmp = '';
 			if ( trim($wtmp) != '' && strpos($wtmp, ':') === false ) {
 				$this->error =
 				'<div style="color:red">Free text in the <b>with/from</b> field needs to be entered in the format'
 				. '<br /><b>identifier:value</b>, or an identifier must be selected from the pulldown list.'
 				. "<br />You entered: <b>$wtmp</b></div>";
 			}
-			if( in_array($evidence, $this->wcodes)){
+			if( $this->needsWith($evidence)){
 				#$menu = "";
 				foreach ($wlines as $wline){
 					$menu = "<select name = 'field[$this->col_index][]' onchange='this.form.submit();'>";
@@ -148,6 +169,27 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 			}	
 		}	
 	}
+	/*
+	This function takes advantage of the ECO parsing for OMP to test whether an ECO term is a child of a term that needs a with/from
+	*/
+	public function needsWith($evidence){
+	global $egEcoDotFileDir;
+		trigger_error("dot files in: $egEcoDotFileDir");
+		# exampe eco0007152.dot.txt
+		list($prefix, $evnum) = explode(':', $evidence);
+		$dotfile = file_get_contents("$egEcoDotFileDir/eco".$evnum.".dot.txt"); 
+		foreach($this->wcodes as $ec){
+			list($prefix, $ecnum) = explode(':', $ec);	
+			if($evidence == $ec ||
+				(strpos($dotfile, "->ECO$ecnum") > 0)
+			){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	
 	function aspect(){
 		$aspect = '';
 		switch ($this->term->namespace){
@@ -192,7 +234,7 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 			# look this up from term, not row_hash, because the go_term is updating on the same refresh cycle
 			if (trim($this->term->name)  == '') $missing[] = 'Valid GO ID';
 		}
-		if ($this->row_hash['evidence'] == ''){ 
+		if ($this->row_hash['eco_id'] == ''){ 
 			$missing[] = 'evidence';
 		}else{
 			if (in_array($this->evidence_code(), $this->wcodes)	){
@@ -212,7 +254,7 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 		}else{
 			$msg = "complete";
 		}
-		wfRunHooks( 'TableEditGOannotationStatus', array($this->row_id, &$msg) );
+		Hooks::run( 'TableEditGOannotationStatus', array($this->row_id, &$msg) );
 		return $msg;
 	}
 	
@@ -220,7 +262,10 @@ class ecTableEdit_go_annotation extends TableEdit_Column_rule{
 		$this->term = new OntologyTerm; #$id = 'GO:0000003';
 		$this->term->setTag('id', $id);
 		$x = $this->dbi->getLastTermRevision($this->term);
-		if (is_object($x)) $this->term->setStanza($x->term_text);
+		if (is_object($x)){ 
+			$this->term->setStanza($x->term_text);
+			$this->term->last_data_version = $x->last_data_version;
+		}	
 	}
 
 }

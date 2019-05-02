@@ -70,8 +70,8 @@ abstract class TableEdit_Column_rule{
 		switch ($act){
 			case 'Save':
             case 'Save Row':
-            case wfMsg('save'):
-            case wfMsg('save-row'):
+            case wfMessage('save')->text():
+            case wfMessage('save-row')->text():
 				#echo "saving row to nav view";
 
 				$this->col_data = $this->show_data();

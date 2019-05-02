@@ -29,7 +29,7 @@ EOT;
         exit( 1 );
 }
 // credits for this extension
-$wgExtensionCredits['specialpage'][] = array(
+/*$wgExtensionCredits['specialpage'][] = array(
 	'name' 			=> 'TableEdit',
 	'author' 		=> array('Jim Hu', '[mailto:bluecurio@gmail.com Daniel Renfro]'),
 	'version'		=> '1.1.1',
@@ -44,7 +44,8 @@ $wgAutoloadClasses['TableEdit'] 			= dirname(__FILE__).'/SpecialTableEdit.body.p
 $wgAutoloadClasses['TableEditView'] 		= dirname(__FILE__).'/class.TableEditView.php';
 $wgAutoloadClasses['TableEdit_Loader'] 		= dirname(__FILE__).'/class.loader.php';
 $wgAutoloadClasses['TableEditLinker'] 		= dirname(__FILE__).'/modules/TableEditLinks.php';
-$wgAutoloadClasses['TableEditCategoryTags'] 		= dirname(__FILE__).'/modules/TableEditCategoryTags.php';
+$wgAutoloadClasses['TableEditCategoryTags'] = dirname(__FILE__).'/modules/TableEditCategoryTags.php';
+$wgAutoloadClasses['TableEditTableMarkerUpper'] = dirname(__FILE__).'/modules/TableMarkerUpper.php';
 
 // include the messages
 $wgExtensionMessagesFiles['TableEdit']       = dirname(__FILE__) . '/SpecialTableEdit.i18n.php';
@@ -59,213 +60,255 @@ require_once(dirname(__FILE__).'/modules/TableEditCategorySummary.php');
 $wgSpecialPages['TableEdit'] 				= 'TableEdit';
 
 // Register hooks
-$wgHooks['ArticleSave'][] 			= 'wfNewEditTable' ;
-$wgHooks['ArticleDeleteComplete'][] 		= 'wfDeleteTables';
-$wgHooks['TitleMoveComplete'][]     = 'wfTableEdit_MovePage';
-$wgHooks['BeforePageDisplay'][]  = 'wfTableEdit_AddHeadThings';
-$wgHooks['ResourceLoaderRegisterModules'][] = 'efTableEdit_RegisterModules';
+$wgHooks['PageContentSave'][] 			= 'TableEditHookFunctions::NewTable' ;
+$wgHooks['ArticleDeleteComplete'][] = 'TableEditHookFunctions::DeleteTables';
+$wgHooks['TitleMoveComplete'][]     = 'TableEditHookFunctions::MovePage';
+$wgHooks['BeforePageDisplay'][]     = 'TableEditHookFunctions::AddHeadThings';
+$wgHooks['ResourceLoaderRegisterModules'][] = 'TableEditHookFunctions::RegisterModules';
+$wgHooks['ParserBeforeTidy'][] = 'TableEditTableMarkerUpper::onParserBeforeTidy';
 
-function wfTableEdit_MovePage( &$title, &$newtitle, &$user, $oldid, $newid ) {
-
-	// Does ANYONE know how to do this *correctly*?? DPR
-
-	$dbw = wfGetDB( DB_MASTER );
-	$sql = 'UPDATE ext_TableEdit_box
-	        SET page_name = (
-	        	SELECT DISTINCT(page_title)
-	        	FROM page
-	        	WHERE page_id = page_uid
-	        )
-	        WHERE page_name = "' . $title->getDBkey() . '"';
-	$result = $dbw->query( $sql );
-
-	// keep processing
-	return true;
-}
-
-function wfNewEditTable( &$article, &$user, &$page_text, &$summary, $minor, $watch, $sectionanchor, &$flags){
-	global $wgMessageCache, $wgTableEditMessages, $wgScript, $wgServerName, $wgHooks;
-
-	# abort if this is a template page or if the page has not been saved yet
-	$title = $article->getTitle();
-	if ($title->getNamespace() == 10 || $title->getNamespace() == 8 || !$title->exists()) return true;
-
-#	foreach( $wgTableEditMessages as $key => $value ) {
-#		$wgMessageCache->addMessages( $wgTableEditMessages[$key], $key );
-#	}
-
-	# parsing functionality modified from Parser.php
-	# end up with a string, $stripped, where each instance is replaced by -newTableEdit-00000001-QINU
-	# where the 8 digit numbers increment, and $matches, an array of useful info, including the
-	# strings to replace in $stripped and the parameters passed by the enclosed tags, if any.
-	static $n = 1;
-	$stripped = '';
-	$matches = array();
-
-	$taglist = "newTableEdit|newVTableEdit";
-	$start = "/<($taglist)(\\s+[^>]*?|\\s*?)(\/?>)/i";
-	$text = $page_text;
-	while ( '' != $text ) {
-		$p = preg_split( $start, $text, 2, PREG_SPLIT_DELIM_CAPTURE );
-		$stripped .= $p[0];
-		if( count( $p ) < 5 ) {
-			break;
-		}
-		if( count( $p ) > 5 ) {
-			// comment
-			$element    = $p[4];
-			$attributes = '';
-			$close      = '';
-			$inside     = $p[5];
-		} else {
-			// tag
-			$element    = $p[1];
-			$attributes = $p[2];
-			$close      = $p[3];
-			$inside     = $p[4];
-		}
-
-		$uniq_prefix = dechex(mt_rand(0, 0x7fffffff)) . dechex(mt_rand(0, 0x7fffffff));
-		$marker = "$uniq_prefix-$element-" . sprintf('%08X', $n++) . '-QINU';
-		$stripped .= $marker;
-
-		if ( $close === '/>' ) {
-			// Empty element tag, <tag />
-			$content = null;
-			$text = $inside;
-			$tail = null;
-		} else {
-			if( $element == '!--' ) {
-				$end = '/(-->)/';
-			} else {
-				$end = "/(<\\/$element\\s*>)/i";
-			}
-			$q = preg_split( $end, $inside, 2, PREG_SPLIT_DELIM_CAPTURE );
-			$content = $q[0];
-			if( count( $q ) < 3 ) {
-				# No end tag -- let it run out to the end of the text.
-				$tail = '';
-				$text = '';
-			} else {
-				$tail = $q[1];
-				$text = $q[2];
-			}
-		}
-
-		$matches[$marker] = array( $element,
-			$content,
-			Sanitizer::decodeTagAttributes( $attributes ),
-			"<$element$attributes$close$content$tail" );
-	}
-	$pagename = $article->mTitle->getPrefixedDBkey();
-	$page_uid = $article->getID();
-	$type = "";
-
-	# gather nowiki content
-	preg_match_all('/<nowiki>.*<\/nowiki>/i', $stripped, $nowiki_matches);
-	$nowiki = " ".implode('',$nowiki_matches[0]);
-
-	foreach ($matches as $key=>$match){
-		# key is the stuff to replace at the end
-		# $match[0] is the element
-
-		# put back calls from inside nowiki
-		if (strpos($nowiki,$key) > 0){
-			$replacement = "<".$match[0];
-			if (isset($match[1])){
-				$replacement .= ">".$match[1]."</".$match[0].">";
-			}else $replacement .= "/>";
-			$stripped = str_replace($key,$replacement,$stripped);
-			continue;
-		}
-
-		switch ($match[0]){
-			case 'newTableEdit':
-				$type = 0;
-				break;
-			case 'newVTableEdit':
-				$type = 1;
-				break;
-
-		}
-		# $match[1] is the parameters.
-		$data = trim($match[1]);
-		if (strpos("_".$data,"Template:") == 1){
-			#assume it's a template
-			$template = str_replace("Template:", "", str_replace("\n","_",$data) );
-			$template = str_replace(" ", "_", $template);
-			$headings = '';
-		}else{
-			$template = "";
-			$headings = $data;
-		}
-
-		$tableEdit = new TableEdit;
-		$box = new wikiBox();
-		$box->page_name = $pagename;
-		$box->page_uid = $page_uid;
-		$box->template = trim($template);
-		$box->headings = $headings;
-		$box->colnum = substr_count($headings,"\n")+1;
-		$box->type = $type;
-		$box->save_to_DB(); #print_r($box); exit;
-		$box->set_from_DB();# needed to process templates
-		$replacement = $tableEdit->make_wikibox($box);
-
-		#protectsection different versions hook in different places
-		if (
-			(isset($wgHooks['EditFilter']) && is_array($wgHooks['EditFilter']) && in_array('wfCheckProtectSection',$wgHooks['EditFilter'])) ||
-			(is_array($wgHooks['ParserAfterTidy']) && in_array('ProtectSectionClass::stripTags',$wgHooks['ParserAfterTidy']))
-			){ 
-				$replacement = "<protect>".$replacement."</protect>";
-			}	
-
-
-		$stripped = str_replace($key,$replacement,$stripped);
-	}
-
-	$page_text = $stripped;
-	return true;
-}
-/*
-Hook to ArticleDeleteComplete:
-&$article, User &$user, $reason, $id
+global $wgVersion;
+$oldVersion = version_compare( $wgVersion, '1.25', '<=' );
 */
-function wfDeleteTables(&$article, &$user, $reason, $id){
-	preg_match_all("/(?:<protect>)?<\!--box uid=(\w+\.\d+\.\w+)-->(?:<\/protect>)?/", $article->getText(), $uids);
-	foreach(array_unique($uids[1]) as $uid){
-		$box = new wikiBox($uid);
-		$box->set_from_DB();
-		$box->delete_box_from_db();
+
+class TableEditHookFunctions{
+
+	public static function MovePage( &$title, &$newtitle, &$user, $oldid, $newid ) {
+
+		// Does ANYONE know how to do this *correctly*?? DPR
+
+		$dbw = wfGetDB( DB_MASTER );
+		$sql = 'UPDATE ext_TableEdit_box
+				SET page_name = (
+					SELECT DISTINCT(page_title)
+					FROM page
+					WHERE page_id = page_uid
+				)
+				WHERE page_name = "' . $title->getDBkey() . '"';
+		$result = $dbw->query( $sql );
+
+		// keep processing
+		return true;
 	}
-	return true;
-}
 
-function efTableEdit_RegisterModules( $resourceLoader ) {
-	global $wgResourceModules;
-	$wgResourceModules['ext.TableEdit'] = array(
-		'scripts' => array(
-		#	'js/jquery.dataTables.js', 
-		#	'DataTables/datatables.min.js',
-			'js/init_datatables.js'
-			),
-		'styles' => array(
-			'css/main.css', 
-		#	'DataTables/datatables.min.css'
-			#'css/demo_table.css', 
-			#'css/demo_table_jui.css'
-			),
-		'localBasePath' => __DIR__,
-		'remoteExtPath' => 'TableEdit',
-		# use the DataTables extension to provide access to the JQuery Datatables plugin
-		'dependencies' => array('ext.datatables')
-	);
-	return true;
-}
+	/*
+	Modify to change hook from deprecated ArticleSave to PageContentSave
+	
+	public static function onPageContentSave( &$wikiPage, &$user, &$content, &$summary, $isMinor, $isWatch, $section, &$flags, &$status ) 
+	*/
+	public static function onPageContentSave( &$wikiPage, &$user, &$content, &$summary, $isMinor, $isWatch, $section, &$flags, &$status ) {
+		$namespace = $wikiPage->getTitle()->getNamespace();
+		switch($namespace){
+			case NS_TEMPLATE:
+				self::TemplateModified($wikiPage, $user, $content, $summary, $isMinor, $isWatch, $section, $flags, $status);
+				break;
+			default:
+				self::NewTable($wikiPage, $user, $content, $summary, $isMinor, $isWatch, $section, $flags, $status );
+		
+		}
+	}
+
+	public static function NewTable( &$wikiPage, &$user, &$contentObj, &$summary, $minor, $watch, $sectionanchor, &$flags, $status){
+		global $wgMessageCache, $wgTableEditMessages, $wgScript, $wgServerName, $wgHooks;
+
+		# abort if this is a template page or if the page has not been saved yet
+		$title = $wikiPage->getTitle();
+		if ($title->getNamespace() == 10 || $title->getNamespace() == 8 || !$title->exists()) return true;
+
+	#	foreach( $wgTableEditMessages as $key => $value ) {
+	#		$wgMessageCache->addMessages( $wgTableEditMessages[$key], $key );
+	#	}
+
+		# parsing functionality modified from Parser.php
+		# end up with a string, $stripped, where each instance is replaced by -newTableEdit-00000001-QINU
+		# where the 8 digit numbers increment, and $matches, an array of useful info, including the
+		# strings to replace in $stripped and the parameters passed by the enclosed tags, if any.
+		static $n = 1;
+		$stripped = '';
+		$matches = array();
+
+		$taglist = "newTableEdit|newVTableEdit";
+		$start = "/<($taglist)(\\s+[^>]*?|\\s*?)(\/?>)/i";
+		
+		#get text from content object or wikiPage
+		$page_text = ContentHandler::getContentText($contentObj);
+		$text = $page_text;
+		while ( '' != $text ) {
+			$p = preg_split( $start, $text, 2, PREG_SPLIT_DELIM_CAPTURE );
+			$stripped .= $p[0];
+			if( count( $p ) < 5 ) {
+				break;
+			}
+			if( count( $p ) > 5 ) {
+				// comment
+				$element    = $p[4];
+				$attributes = '';
+				$close      = '';
+				$inside     = $p[5];
+			} else {
+				// tag
+				$element    = $p[1];
+				$attributes = $p[2];
+				$close      = $p[3];
+				$inside     = $p[4];
+			}
+
+			$uniq_prefix = dechex(mt_rand(0, 0x7fffffff)) . dechex(mt_rand(0, 0x7fffffff));
+			$marker = "$uniq_prefix-$element-" . sprintf('%08X', $n++) . '-QINU';
+			$stripped .= $marker;
+
+			if ( $close === '/>' ) {
+				// Empty element tag, <tag />
+				$content = null;
+				$text = $inside;
+				$tail = null;
+			} else {
+				if( $element == '!--' ) {
+					$end = '/(-->)/';
+				} else {
+					$end = "/(<\\/$element\\s*>)/i";
+				}
+				$q = preg_split( $end, $inside, 2, PREG_SPLIT_DELIM_CAPTURE );
+				$content = $q[0];
+				if( count( $q ) < 3 ) {
+					# No end tag -- let it run out to the end of the text.
+					$tail = '';
+					$text = '';
+				} else {
+					$tail = $q[1];
+					$text = $q[2];
+				}
+			}
+
+			$matches[$marker] = array( $element,
+				$content,
+				Sanitizer::decodeTagAttributes( $attributes ),
+				"<$element$attributes$close$content$tail" );
+		}
+		$pagename = $wikiPage->getTitle()->getPrefixedDBkey();
+		$page_uid = $wikiPage->getID();
+		$type = "";
+
+		# gather nowiki content
+		preg_match_all('/<nowiki>.*<\/nowiki>/i', $stripped, $nowiki_matches);
+		$nowiki = " ".implode('',$nowiki_matches[0]);
+
+		foreach ($matches as $key=>$match){
+			# key is the stuff to replace at the end
+			# $match[0] is the element
+
+			# put back calls from inside nowiki
+			if (strpos($nowiki,$key) > 0){
+				$replacement = "<".$match[0];
+				if (isset($match[1])){
+					$replacement .= ">".$match[1]."</".$match[0].">";
+				}else $replacement .= "/>";
+				$stripped = str_replace($key,$replacement,$stripped);
+				continue;
+			}
+
+			switch ($match[0]){
+				case 'newTableEdit':
+					$type = 0;
+					break;
+				case 'newVTableEdit':
+					$type = 1;
+					break;
+
+			}
+			# $match[1] is the parameters.
+			$data = trim($match[1]);
+			if (strpos("_".$data,"Template:") == 1){
+				#assume it's a template
+				$template = str_replace("Template:", "", str_replace("\n","_",$data) );
+				$template = str_replace(" ", "_", $template);
+				$headings = '';
+			}else{
+				$template = "";
+				$headings = $data;
+			}
+
+			$tableEdit = new TableEdit;
+			$box = new wikiBox();
+			$box->page_name = $pagename;
+			$box->page_uid = $page_uid;
+			$box->template = trim($template);
+			$box->headings = $headings;
+			$box->colnum = substr_count($headings,"\n")+1;
+			$box->type = $type;
+			$box->save_to_DB(); #print_r($box); exit;
+			$box->set_from_DB();# needed to process templates
+			$replacement = $tableEdit->make_wikibox($box);
+
+			#protectsection different versions hook in different places
+			if (
+				(isset($wgHooks['EditFilter']) && is_array($wgHooks['EditFilter']) && in_array('wfCheckProtectSection',$wgHooks['EditFilter'])) ||
+				(is_array($wgHooks['ParserAfterTidy']) && in_array('ProtectSectionClass::stripTags',$wgHooks['ParserAfterTidy']))
+				){ 
+					$replacement = "<protect>".$replacement."</protect>";
+				}	
 
 
-function wfTableEdit_AddHeadThings( OutputPage &$out, Skin &$skin){
-	$out->addModules( 'ext.TableEdit' );
-	return true;
+			$stripped = str_replace($key,$replacement,$stripped);
+		}
+
+		$page_text = $stripped;
+		$newContentObj = ContentHandler::makeContent($page_text, $title);
+		$contentObj = $newContentObj; 
+		return true;
+	}
+	/*
+	Hook to ArticleDeleteComplete:
+	&$wikiPage, User &$user, $reason, $id
+	*/
+
+	public static function TemplateModified(&$wikiPage, &$user, &$content, &$summary, $isMinor, $isWatch, $section, &$flags, &$status ){
+		trigger_error(__METHOD__);
+		return true;		
+	}
+
+	public static function DeleteTables(&$wikiPage, &$user, $reason, $id){
+		$content = $wikiPage->getContent();
+		$text = ContentHandler::getContentText( $content );
+		preg_match_all("/(?:<protect>)?<\!--box uid=(\w+\.\d+\.\w+)-->(?:<\/protect>)?/", $text, $uids);
+		foreach(array_unique($uids[1]) as $uid){
+			$box = new wikiBox($uid);
+			$box->set_from_DB();
+			$box->delete_box_from_db();
+		}
+		return true;
+	}
+
+	public static function RegisterModules( $resourceLoader ) {
+		global $wgResourceModules;
+		$wgResourceModules['ext.TableEdit'] = array(
+			'scripts' => array(
+			#	'js/jquery.dataTables.js', 
+			#	'DataTables/datatables.min.js',
+				'js/init_datatables.js'
+				),
+			'styles' => array(
+				'css/main.css', 
+			#	'DataTables/datatables.min.css'
+				#'css/demo_table.css', 
+				#'css/demo_table_jui.css'
+				),
+			'localBasePath' => __DIR__,
+			'remoteExtPath' => 'TableEdit',
+			# use the DataTables extension to provide access to the JQuery Datatables plugin
+			'dependencies' => array('ext.datatables')
+		);
+		return true;
+	}
+
+
+	public static function AddHeadThings( OutputPage $out, Skin &$skin){
+		#trigger_error(__METHOD__);
+		#global $wgResourceModules;
+		#print_r($wgResourceModules['ext.TableEdit']);
+		$out->addModules( 'ext.TableEdit' );
+		return true;
+
+	}
 
 }

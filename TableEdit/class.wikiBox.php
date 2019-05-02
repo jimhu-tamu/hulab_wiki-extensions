@@ -2,13 +2,14 @@
 
 class wikiBox {
 
-	var $box_id = null;							// the primary key in the database
+	var $box_id = null;					// the primary key in the database
 	var $template = '';
-	var $box_uid = null;							// the long string delimiting the box in the page, see new_box_uid()
+	var $box_uid = null;					// the long string delimiting the box in the page, see new_box_uid()
 	var $page_name = null;
 	var $page_uid = null;
 	var $type = 0;
 	var $headings = null;
+	var $old_headings = null; 				// to check for template edits
 	var $heading_style = '';
 	var $help1 = '';
 	var $help2 = '';
@@ -26,9 +27,9 @@ class wikiBox {
 	var $colnum = null;
 	var $rownum = null;
 	var $box_metadata = array();
-	var $is_changed = false;					// has this box been changed since last load?
-	var $skip_saving_relations = false;			// skip normal foreign-table saving?
-	private $is_datatable;						// is this table a JS "dataTable" (holds info from template)
+	var $is_changed = false;				// has this box been changed since last load?
+	var $skip_saving_relations = false;		// skip normal foreign-table saving?
+	private $is_datatable;					// is this table a JS "dataTable" (holds info from template)
 
 	
 	// for some reason the constructor takes the box
@@ -81,11 +82,13 @@ class wikiBox {
 	}
 
 	function set_headings_from_template(){
-		$templatePage = Revision::newFromTitle(Title::makeTitle(NS_TEMPLATE, $this->template));
+		$templatePage = new WikiPageTE(Title::makeTitle(NS_TEMPLATE, $this->template));
 
 		if (! $templatePage){
 			$this->headings = "[["  .wfMessage('template')->text() . ":" . $this->template . "]] " . wfMessage('notFound')->text();
 		}else{
+			# store old heading to check if edited
+			$this->old_headings = $this->headings;
 			$template_text = '<xml>'.trim($templatePage->getText()).'</xml>';
 			$xml_parser = xml_parser_create();
 			$parse = xml_parse_into_struct($xml_parser, $template_text, $values, $index);
@@ -129,7 +132,8 @@ class wikiBox {
 #				trigger_error("Trouble setting headings on " . $this->template . " table on " . $this->page_name, E_USER_WARNING);
 			}
 		}
-		$this->colnum = count($this->headings);
+	#	$this->colnum = count($this->headings);
+		return true;
 	}
 
 	/**
@@ -227,17 +231,27 @@ class wikiBox {
 			}
 		}		
 		$dbr->freeResult( $result );
-		# make sure row data matches number of columns in headings
-		# also set foreign props
-		foreach ($rows as $row_index => $row){
-			$tmp = explode ("||",$row->row_data);
+		# make sure row data matches current template headings
+		$old_headings = array();
+		if($this->headings != $this->old_headings){
 			$headings = explode("\n",$this->headings);
-			$tmp2 = array();
-			foreach($headings as $i=>$heading){
-				$tmp2[$i] = '';
-				if (isset($tmp[$i])) $tmp2[$i] = $tmp[$i];
+			$old_headings = explode("\n",$this->old_headings);				
+		
+			foreach ($rows as $row_index => $row){
+				$values = explode ("||",$row->row_data);
+				# remap if template has changed the headings
+				$tmp = $row_hash = array();			
+				foreach($values as $i=>$val){
+					if(isset($old_headings[$i])){
+						 $row_hash[$old_headings[$i]] = $val;
+					}	 
+				}
+				foreach($headings as $i => $heading){
+					$tmp[$i] = '';
+					if(isset($row_hash[$heading])) $tmp[$i] = $row_hash[$heading];
+				}
+				$row->row_data = implode("||",$tmp);
 			}
-			$row->row_data = implode("||",$tmp2);
 		}
 		return $rows;
 	}
@@ -254,6 +268,9 @@ class wikiBox {
 		return false;
 	}
 
+	/*
+	row_hash keys are column names not text headings.
+	*/
 	function get_row_hash($row_index){
 		$hash = array();
 		if(isset($this->rows[$row_index])){
@@ -264,6 +281,18 @@ class wikiBox {
 			}
 		}
 		return $hash;
+	}
+	
+	/*
+	row_hash keys should be column names not text headings.
+	*/
+	function setRowDataFromHash($row_index, $row_hash){
+		$tmp = array();
+		foreach($this->column_names as $i => $heading){
+			$tmp[$i] = '';
+			if(isset($row_hash[$heading])) $tmp[$i] = $row_hash[$heading];
+		}
+		$this->rows[$row_index]->row_data = implode("||",$tmp);
 	}
 
 	function insert_row($data, $owner='', $style=''){
@@ -334,7 +363,12 @@ class wikiBox {
 		return $this->save_to_db();
 	}
 
-	// only want to save if new or changed
+	/* only want to save if new or changed
+	
+	There are two cases: a new box on a new page has to wait for the page_uid to be created
+	Alternatively, save when changing an existing box
+	
+	*/
 	function save_to_db(){
 
 		global $wgUser;
@@ -344,7 +378,7 @@ class wikiBox {
 		if (!isset($this->headings) && isset($this->template)) {
 			$this->set_headings_from_template();
 		}
-
+		
 		// order of $values is important...
 
 		$values = array(
@@ -360,8 +394,15 @@ class wikiBox {
 		);
 		if($this->box_id == null || $this->box_id == ''){
 			$values['box_id'] = null;
+			# no box_uid for a new page
 			if ( !isset($this->box_uid) || is_null($this->box_uid) ){
 				$this->box_uid = $this->new_box_uid();
+			
+			# validate box_uid to prevent injection of junk
+			# this is based on SQL injection bug detected in April 2019
+			}elseif(strpos($this->box_uid, '.'.$this->page_uid.'.') === false){
+				trigger_error("invalid box_uid: $this->box_uid");
+				return false;	
 			}
 			$values['box_uid'] = $this->box_uid;
 			$result = $dbw->insert('ext_TableEdit_box', $values, __METHOD__);
@@ -432,9 +473,9 @@ class wikiBox {
 		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select('ext_TableEdit_box', '*', $conds ,__METHOD__ );
 		if ($dbr->numRows($result) != 1) return false;
-		$x = $dbr->fetchObject ( $result );
-		$arr = get_object_vars($x);	
-		foreach ($arr as $key=>$val){
+		
+		$x = $dbr->fetchObject ( $result ); 
+		foreach ($x as $key=>$val){
 			$this->$key = stripslashes($val);
 		}
 		# Get information about the table headings.  Headings can come from either a template page or from a field in the box table.
@@ -449,7 +490,7 @@ class wikiBox {
 		}
 		$this->set_metadata_fromDb();
 
-		$dbr->freeResult( $result );
+		$dbr->freeResult( $result ); 
 		return true;
 	}
 
@@ -471,11 +512,13 @@ class wikiBox {
 	 *    everything associated with this box.
 	 */
 	function delete() {
-		// remove this box's metadata
+	
 		if(is_null($this->box_id)){
-			trigger_error("can't delete table with uid:$this->box_uid. box_id not found");
+			#trigger_error("can't delete table with uid:$this->box_uid from page $this->page_name. box_id not found\n");
 			return;
 		}
+		
+		// remove this box's metadata
 		foreach ( $this->box_metadata as $m ) {
 			$m->delete();
 		}		
@@ -540,7 +583,7 @@ class wikiBox {
 		$this->box_metadata = array();
 		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select('ext_TableEdit_box_metadata','*',array("box_id = '".$this->box_id."'"),__METHOD__);
-		if (!$result || count($dbr->numRows($result)) == 0){
+		if (!$result || $dbr->numRows($result) == 0){
 			return true;
 		}
 		while( $x = $dbr->fetchObject ( $result ) ) {
@@ -758,6 +801,10 @@ class wikiBoxRow{
 	 * @return int
 	 */
     public function originalRowAuthor( $ignore = array() ) {
+    	# handle null passed to this method
+    	if(is_null($ignore)){
+    		$ignore = array();
+    	}
         // if we got an integer parameter, add it to the array of ignores
         if ( is_string($ignore) || is_integer($ignore) ) {
             $ignore = array( $ignore );
@@ -871,7 +918,7 @@ class wikiBoxRow{
 			$this->is_current = false;
 			return false;
 		}
-		if (count($dbr->numRows($result)) > 1) return; #("Error:box_id should be unique");;
+		if ($dbr->numRows($result) > 1) return; #("Error:box_id should be unique");;
 
 		$x = $dbr->fetchObject( $result );
         $arr = get_object_vars($x);		
@@ -988,7 +1035,7 @@ class wikiBoxRow{
 		if (!isset($this->row_style)) $this->row_style = '';
 		if (!isset($this->owner_uid)) $this->owner_uid = 0;			// a user_id of 0 means "public"
 
-		wfRunHooks( 'TableEditBeforeDbSaveRow', array(&$this)  );
+		Hooks::run( 'TableEditBeforeDbSaveRow', array(&$this)  );
 
 		if ( !$this->row_id ) {
 			// a new row..insert!
@@ -1051,13 +1098,13 @@ class wikiBoxRow{
 
             #it's in the DB but it's not current.  Delete it from the DB
 
-		    wfRunHooks( 'TableEditBeforeRowDelete', array(&$this)  );
+		    Hooks::run( 'TableEditBeforeRowDelete', array(&$this)  );
 			$result = $dbw->delete(
 				'ext_TableEdit_row',
 				array("row_id = '".$this->row_id."'"),
 				__METHOD__
 			);
-		    wfRunHooks( 'TableEditAfterRowDelete', array(&$this, $result)  );
+		    Hooks::run( 'TableEditAfterRowDelete', array(&$this, $result)  );
 			$changed = 1;
 
 		}
@@ -1065,7 +1112,7 @@ class wikiBoxRow{
 			$changed += $row_metadata->db_save();
 		}
 
-		wfRunHooks( 'TableEditAfterDbSaveRow', array(&$this)  );
+		Hooks::run( 'TableEditAfterDbSaveRow', array(&$this)  );
 
 		return $changed;
 	}
@@ -1110,7 +1157,7 @@ class wikiBoxRow{
 		$this->row_metadata = array();
 		$dbr = wfGetDB( DB_SLAVE );
 		$result = $dbr->select('ext_TableEdit_row_metadata','*',array("row_id = '".$this->row_id."'"),__METHOD__);
-		if (!$result || count($dbr->numRows($result)) == 0){
+		if (!$result || $dbr->numRows($result) == 0){
 			return true;
 		}
 		while( $x = $dbr->fetchObject ( $result ) ) {
